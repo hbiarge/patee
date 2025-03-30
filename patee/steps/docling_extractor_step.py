@@ -65,7 +65,6 @@ class DoclingExtractor(ParallelExtractStep):
 
 
     def extract(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-
         if isinstance(source, MonolingualSingleFilePair):
             return self._extract_file_pair(source)
         elif isinstance(source, MultilingualSingleFile):
@@ -80,7 +79,7 @@ class DoclingExtractor(ParallelExtractStep):
 
         return StepResult(
             document_1=LanguageResult(
-                source=LanguageResultSource(document_path=source.document_1.document_path, iso2_language=source.document_1.iso2_language),
+                source=LanguageResultSource.from_monolingual_file(source.document_1),
                 text="\n".join(element[1] for element in document_1_result.extracted_text),
                 extra={
                 "excluded_text": document_1_result.excluded_text,
@@ -88,7 +87,7 @@ class DoclingExtractor(ParallelExtractStep):
                 }
             ),
             document_2=LanguageResult(
-                source=LanguageResultSource(document_path=source.document_2.document_path, iso2_language=source.document_2.iso2_language),
+                source=LanguageResultSource.from_monolingual_file(source.document_2),
                 text="\n".join(element[1] for element in document_2_result.extracted_text),
                 extra={
                     "excluded_text": document_2_result.excluded_text,
@@ -98,18 +97,7 @@ class DoclingExtractor(ParallelExtractStep):
         )
 
     def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
-        return StepResult(
-            document_1=LanguageResult(
-                source=LanguageResultSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
-                text="",
-                extra={}
-            ),
-            document_2=LanguageResult(
-                source=LanguageResultSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
-                text="",
-                extra={}
-            ),
-        )
+        raise NotImplementedError("Single file extraction is not implemented yet.")
 
     def _convert_file(self, file: MonolingualSingleFile, shared_page_info: PageInfo) -> _DoclingExtractionResult:
         page_range = [shared_page_info.start_page, shared_page_info.end_page] if shared_page_info \

@@ -1,7 +1,7 @@
-from patee.steps import ParallelTextStep, StepResult, LanguageResult
+from patee.steps import ParallelProcessStep, StepResult, LanguageResult
 
 
-class NoopStep(ParallelTextStep):
+class NoopStep(ParallelProcessStep):
 
     def __init__(self, name: str, **kwargs):
         super().__init__(name=name)

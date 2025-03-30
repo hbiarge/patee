@@ -1,18 +1,18 @@
 from typing import Union
 
 from patee import MonolingualSingleFilePair, MultilingualSingleFile
-from patee.patee import StepBuilder
+from patee.steps_builder import StepsBuilder
 from patee.steps import ParallelExtractStep, StepResult, Step, LanguageResultSource
-from patee.steps.core_step_types import ParallelTextStep, LanguageResult
+from patee.steps.core_step_types import ParallelProcessStep, LanguageResult
 
 
-class FakeStepBuilder(StepBuilder):
+class FakeStepsBuilder(StepsBuilder):
 
     def build(self, step_type: str, step_name:str, **kwargs) -> Step:
         if step_type == "extract_fake":
             return ExtractFake(step_name)
         elif step_type == "text_fake":
-            return TextFake(step_name)
+            return ProcessFake(step_name)
         else:
             raise ValueError(f"Unknown step name: {step_type}")
 
@@ -52,7 +52,7 @@ class ExtractFake(ParallelExtractStep):
             raise ValueError(f"Unsupported source type: {type(source)}")
 
 
-class TextFake(ParallelTextStep):
+class ProcessFake(ParallelProcessStep):
     def __init__(self, name: str):
         super().__init__(name)
 

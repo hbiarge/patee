@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union, Iterable, cast
@@ -8,41 +7,17 @@ import yaml
 from patee.input_types import  MultilingualSingleFile, MonolingualSingleFilePair
 from patee.steps import ParallelExtractStep, StepResult
 
-from patee.steps.docling_extractor_step import DoclingExtractor
-from patee.steps.core_step_types import ParallelTextStep, Step
-from patee.steps.noop_step import NoopStep
-
-
-@dataclass(frozen=True)
-class ProcessedStepInfo:
-    """Class to hold information about a processing step."""
-    step_name: str
-    version: str
-
-class StepBuilder(ABC):
-    """Abstract class for building processing steps."""
-    @abstractmethod
-    def build(self, step_type: str, step_name: str, **kwargs) -> Step:
-        pass
-
-
-class DefaultStepBuilder(StepBuilder):
-    def build(self, step_type:str, step_name:str, **kwargs) -> Step:
-        if step_type == "docling_extractor":
-            return DoclingExtractor(step_name, **kwargs)
-        elif step_type == "noop_step":
-            return NoopStep(step_name, **kwargs)
-        else:
-            raise ValueError(f"Unknown step: {step_type}")
+from patee.steps.core_step_types import ParallelProcessStep
+from patee.steps_builder import StepsBuilder, DefaultStepsBuilder
 
 
 class Patee:
     """Main pipeline class to coordinate the processing steps."""
 
-    def __init__(self, step_builder: StepBuilder=None):
+    def __init__(self, step_builder: StepsBuilder =None):
         """Initialize the pipeline with processing steps."""
         if step_builder is None:
-            self._step_builder = DefaultStepBuilder()
+            self._step_builder = DefaultStepsBuilder()
         else:
             self._step_builder = step_builder
         self._steps = []
@@ -63,20 +38,20 @@ class Patee:
             return False
 
         for step in self._steps[1:]:
-            if not isinstance(step, ParallelTextStep):
+            if not isinstance(step, ParallelProcessStep):
                 return False
 
         return True
 
     @classmethod
-    def load(cls, steps_config_path: Path, steps_builder: StepBuilder = None) -> "Patee":
+    def load_from(cls, steps_config_path: Path, steps_builder: StepsBuilder = None) -> "Patee":
         """Load the pipeline from a configuration file."""
         # Validate the config file exists
         if not steps_config_path.exists():
             raise FileNotFoundError(f"Configuration file {steps_config_path} does not exist.")
 
         config = yaml.safe_load(steps_config_path.read_text(encoding="utf-8"))
-        steps_builder = steps_builder or DefaultStepBuilder()
+        steps_builder = steps_builder or DefaultStepsBuilder()
 
         instance = cls(steps_builder)
 
@@ -102,11 +77,6 @@ class Patee:
             raise ValueError("Step names must be unique in the pipeline configuration.")
 
         return instance
-
-    @classmethod
-    def blank(cls) -> "Patee":
-        """Load a blank pipeline."""
-        return cls()
 
     def remove_step(self, step_name: str) -> None:
         """Remove a step from the pipeline by name."""
@@ -151,7 +121,7 @@ class Patee:
 
         # Validate that all other steps are instances of ParallelTextStep
         for step in self._steps[1:]:
-            if not isinstance(step, ParallelTextStep):
+            if not isinstance(step, ParallelProcessStep):
                 raise ValueError(f"All steps must be instances of ParallelTextStep, got {type(step)} instead.")
 
     @staticmethod

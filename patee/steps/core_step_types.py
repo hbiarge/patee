@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
-from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile, MonolingualSingleFile
 
 
 class Step(ABC):
@@ -18,6 +18,14 @@ class Step(ABC):
 class LanguageResultSource:
     document_path: Path
     iso2_language: str
+
+    @staticmethod
+    def from_monolingual_file(file: MonolingualSingleFile) -> 'LanguageResultSource':
+        return LanguageResultSource(file.document_path, file.iso2_language)
+
+    @staticmethod
+    def from_multilingual_file(file: MultilingualSingleFile, language_idx: int) -> 'LanguageResultSource':
+        return LanguageResultSource(file.document_path, file.iso2_languages[language_idx])
 
 
 @dataclass(frozen=True)
@@ -58,7 +66,7 @@ class ParallelExtractStep(Step):
         pass
 
 
-class ParallelTextStep(Step):
+class ParallelProcessStep(Step):
     """Base class for all extraction steps."""
 
     def __init__(self, name: str):

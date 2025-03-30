@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
-from tests.fakes.step_fakes import FakeStepBuilder
+from tests.fakes.step_fakes import FakeStepsBuilder
 
 EXTRACT_ONLY_CONFIG = Path(__file__).parent / "pipeline_samples" / "extract_only.yml"
 FAKES_CONFIG = Path(__file__).parent / "pipeline_samples" / "fakes.yml"
@@ -9,40 +9,36 @@ FAKES_CONFIG = Path(__file__).parent / "pipeline_samples" / "fakes.yml"
 TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
 TEXT_CA_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD.pdf"
 
-def test_create_blank_patee():
-    patee = Patee.blank()
-
-    assert patee.step_names == []
 
 def test_load_with_default_builder_patee():
-    patee = Patee.load(EXTRACT_ONLY_CONFIG)
+    patee = Patee.load_from(EXTRACT_ONLY_CONFIG)
 
     assert patee.step_names == ["00_parse"]
 
 def test_load_with_fake_builder_patee():
-    builder = FakeStepBuilder()
-    patee = Patee.load(FAKES_CONFIG, steps_builder=builder)
+    builder = FakeStepsBuilder()
+    patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
     assert patee.step_names == ["00_extract", "01_process"]
 
 
 def test_patee_can_remove_steps():
-    builder = FakeStepBuilder()
-    patee = Patee.load(FAKES_CONFIG, steps_builder=builder)
+    builder = FakeStepsBuilder()
+    patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
     patee.remove_step("00_extract")
 
     assert patee.step_names == ["01_process"]
 
 def test_patee_is_valid():
-    builder = FakeStepBuilder()
-    patee = Patee.load(FAKES_CONFIG, steps_builder=builder)
+    builder = FakeStepsBuilder()
+    patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
     assert patee.is_valid == True
 
 
 def test_patee_can_process():
-    builder = FakeStepBuilder()
-    patee = Patee.load(FAKES_CONFIG, steps_builder=builder)
+    builder = FakeStepsBuilder()
+    patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
     source = MonolingualSingleFilePair(
         document_1=MonolingualSingleFile(
