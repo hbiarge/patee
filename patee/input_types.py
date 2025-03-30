@@ -57,6 +57,7 @@ class MonolingualSingleFile(SingleFile):
         if len(self.iso2_language) != 2:
             raise ValueError(f"iso2_language must be a 2-letter ISO code, got {self.iso2_language}")
 
+
 @dataclass
 class MonolingualSingleFilePair:
     """Represent the configuration of a monolingual single file pair processing configuration."""
@@ -90,7 +91,7 @@ class MultilingualSingleFile(SingleFile):
     """Represent the configuration of a monolingual single file processing configuration."""
 
     iso2_languages: List[str]
-    page_info: PageInfo = PageInfo()
+    page_info: PageInfo = None
 
     def __post_init__(self):
         super().__post_init__()
