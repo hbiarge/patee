@@ -1,0 +1,6 @@
+version: 1.0
+steps:
+  - type: extract_fake
+    name: 00_extract
+  - type: text_fake
+    name: 01_process

@@ -1,0 +1,9 @@
+version: 1.0
+steps:
+  - type: docling_extractor
+    name: 00_parse
+    config:
+      parser: docling # docling | pypdfium
+      labels_to_extract: # section_header | list_item | text
+        - text
+        - list_item
