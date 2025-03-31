@@ -40,8 +40,6 @@ class DoclingExtractor(ParallelExtractStep):
 
         pipeline_options = PdfPipelineOptions()
         pipeline_options.do_ocr = False
-        pipeline_options.do_table_structure = False
-        pipeline_options.table_structure_options.do_cell_matching = False
 
         parser = kwargs.get("parser", None)
         if parser is None or parser == "docling":

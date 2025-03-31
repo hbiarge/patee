@@ -35,7 +35,7 @@ class LanguageResult:
     extra: dict
 
     def write_to_file(self, result_dir: Path):
-        file_path = result_dir / f"{self.source.document_path.stem}_{self.source.iso2_language}.txt"
+        file_path = result_dir / f"{self.source.document_path.stem}.txt"
         file_path.write_text(self.text)
 
         if len(self.extra) > 0:

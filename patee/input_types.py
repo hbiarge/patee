@@ -95,7 +95,10 @@ class MultilingualSingleFile(SingleFile):
 
     def __post_init__(self):
         super().__post_init__()
-        # Validate language code
+        # Validate language codes
+        if len(self.iso2_languages) != 2:
+            raise ValueError(f"iso2_languages must contain only two 2-letter ISO codes, got {self.iso2_languages}")
+
         for lang in self.iso2_languages:
             if len(lang) != 2:
                 raise ValueError(f"iso2_languages must contain 2-letter ISO codes, got {lang}")

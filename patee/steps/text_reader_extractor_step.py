@@ -17,17 +17,19 @@ class TextReaderExtractor(ParallelExtractStep):
             raise ValueError(f"Unsupported source type: {type(source)}")
 
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
-        document_1_text = source.document_1.document_path.read_text()
-        document_2_text = source.document_2.document_path.read_text()
+        document_1_text = source.document_1.document_path.read_text(encoding="utf-8")
+        document_2_text = source.document_2.document_path.read_text(encoding="utf-8")
 
         return StepResult(
             document_1=LanguageResult(
                 source=LanguageResultSource.from_monolingual_file(source.document_1),
                 text=document_1_text,
+                extra={}
             ),
             document_2=LanguageResult(
                 source=LanguageResultSource.from_monolingual_file(source.document_2),
                 text=document_2_text,
+                extra={}
             ),
         )
 
