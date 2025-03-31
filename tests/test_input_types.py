@@ -1,8 +1,8 @@
 import re
-
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 from patee import PageInfo, SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
 
@@ -41,6 +41,18 @@ class TestPageInfo:
     def test_invalid_exclude_pages_out_of_range(self):
         with pytest.raises(ValueError, match="exclude_pages entry .* is outside range"):
             PageInfo(start_page=5, end_page=10, pages_to_exclude={3, 7})
+
+    def test_equals(self):
+        page_info1 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
+        page_info2 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
+
+        assert page_info1 == page_info2
+
+    def test_non_equals(self):
+        page_info1 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
+        page_info2 = PageInfo(start_page=5, end_page=10, pages_to_exclude={6, 8})
+
+        assert page_info1 != page_info2
 
 
 class TestSingleFile:

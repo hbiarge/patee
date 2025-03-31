@@ -65,12 +65,7 @@ class TestDoclingExtractor:
         result = extractor.extract(source)
 
         OUT_DIR.mkdir(exist_ok=True)
-
-        file_1 = OUT_DIR / f"{result.document_1.source.document_path.stem}.txt"
-        file_2 = OUT_DIR / f"{result.document_2.source.document_path.stem}.txt"
-
-        file_1.write_text(result.document_1.text)
-        file_2.write_text(result.document_2.text)
+        result.write_to_files(OUT_DIR)
 
         assert result.document_1.text is not None
         assert result.document_2.text is not None

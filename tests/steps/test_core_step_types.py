@@ -1,7 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
+import pytest
+
+from patee import MonolingualSingleFile, MultilingualSingleFile
 from patee.steps import (
     Step,
     LanguageResultSource,
@@ -10,7 +12,6 @@ from patee.steps import (
     ParallelExtractStep,
     ParallelProcessStep
 )
-from patee import MonolingualSingleFile, MultilingualSingleFile, MonolingualSingleFilePair
 
 
 class TestStep:

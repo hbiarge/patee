@@ -1,7 +1,7 @@
 import pytest
 
 from patee import DefaultStepsBuilder
-from patee.steps import Step, TextReaderExtractor, DoclingExtractor, NoopProcessorStep
+from patee.steps import TextReaderExtractor, DoclingExtractor, NoopProcessorStep
 
 
 class TestDefaultStepsBuilder:

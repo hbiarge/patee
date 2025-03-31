@@ -9,8 +9,9 @@ FAKES_CONFIG = Path(__file__).parent / "pipeline_samples" / "fakes.yml"
 TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
 TEXT_CA_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD.pdf"
 
+
 class TestPatee:
-    def test_load_with_default_builder_patee(self):
+    def test_load_with_default_builder(self):
         patee = Patee.load_from(EXTRACT_ONLY_CONFIG)
 
         assert patee.step_names == ["00_parse"]
@@ -56,7 +57,7 @@ class TestPatee:
             )
         )
 
-        result = patee.process(source, out_dir=Path(__file__).parent / "out")
+        result = patee.process(source)
 
         assert result.document_1 is not None
         assert result.document_2 is not None
