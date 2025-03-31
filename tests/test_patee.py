@@ -1,14 +1,13 @@
 from pathlib import Path
 
 from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
-from tests.fakes.step_fakes import FakeStepsBuilder
+from tests.utils.fakes.step_fakes import FakeStepsBuilder
+from tests.utils.mothers.sources import get_monolingual_single_file_pair
 
 EXTRACT_ONLY_CONFIG = Path(__file__).parent / "pipeline_samples" / "extract_only.yml"
 FAKES_CONFIG = Path(__file__).parent / "pipeline_samples" / "fakes.yml"
 
-TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
-TEXT_CA_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD.pdf"
-
+OUT_DIR = Path(__file__).parent / "out"
 
 class TestPatee:
     def test_load_with_default_builder(self):
@@ -37,27 +36,26 @@ class TestPatee:
         assert patee.is_valid == True
 
 
-    def test_patee_can_process(self):
+    def test_patee_can_process_without_out_dir(self):
         builder = FakeStepsBuilder()
         patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
-        source = MonolingualSingleFilePair(
-            document_1=MonolingualSingleFile(
-                document_path=TEXT_ES_FILE,
-                iso2_language="es",
-            ),
-            document_2=MonolingualSingleFile(
-                document_path=TEXT_CA_FILE,
-                iso2_language="ca",
-            ),
-            shared_page_info=PageInfo(
-                start_page=4,
-                end_page=6,
-                pages_to_exclude={5}
-            )
-        )
+        source = get_monolingual_single_file_pair()
 
         result = patee.process(source)
+
+        assert result.document_1 is not None
+        assert result.document_2 is not None
+
+    def test_patee_can_process_with_out_dir(self):
+        builder = FakeStepsBuilder()
+        patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
+
+        source = get_monolingual_single_file_pair()
+
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+        result = patee.process(source, OUT_DIR)
 
         assert result.document_1 is not None
         assert result.document_2 is not None

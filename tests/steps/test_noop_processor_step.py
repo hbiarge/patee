@@ -1,9 +1,6 @@
-from pathlib import Path
+from patee.steps import NoopProcessorStep
+from tests.utils.mothers.sources import get_step_result
 
-from patee.steps import NoopProcessorStep, StepResult, LanguageResult, LanguageResultSource
-
-TEXT_ES_FILE = Path(__file__).parent.parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
-TEXT_CA_FILE = Path(__file__).parent.parent /"utils" / "data" / "GUIA-PDDD.pdf"
 
 class TestNoopProcessorStep:
     def test_noop_default_instance(self):
@@ -14,24 +11,7 @@ class TestNoopProcessorStep:
     def test_noop_can_process(self):
         extractor = NoopProcessorStep("no-op")
 
-        step_result = StepResult(
-            document_1=LanguageResult(
-                source=LanguageResultSource(
-                    document_path=TEXT_ES_FILE,
-                    iso2_language="es",
-                ),
-                text="patata",
-                extra={},
-            ),
-            document_2=LanguageResult(
-                source=LanguageResultSource(
-                    document_path=TEXT_CA_FILE,
-                    iso2_language="ca",
-                ),
-                text="petete",
-                extra={},
-            ),
-        )
+        step_result = get_step_result()
 
         result = extractor.process(step_result)
 

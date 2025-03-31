@@ -1,10 +1,8 @@
 from pathlib import Path
 
-from patee import MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
 from patee.steps import DoclingExtractor
+from tests.utils.mothers.sources import get_monolingual_single_file_pair
 
-TEXT_ES_FILE = Path(__file__).parent.parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
-TEXT_CA_FILE = Path(__file__).parent.parent /"utils" / "data" / "GUIA-PDDD.pdf"
 OUT_DIR = Path(__file__).parent / "out"
 
 class TestDoclingExtractor:
@@ -46,21 +44,7 @@ class TestDoclingExtractor:
     def test_docling_extractor_can_process(self):
         extractor = DoclingExtractor("docling_extractor")
 
-        source = MonolingualSingleFilePair(
-            document_1=MonolingualSingleFile(
-                document_path=TEXT_ES_FILE,
-                iso2_language="es",
-            ),
-            document_2=MonolingualSingleFile(
-                document_path=TEXT_CA_FILE,
-                iso2_language="ca",
-            ),
-            shared_page_info=PageInfo(
-                start_page=4,
-                end_page=6,
-                pages_to_exclude={5}
-            )
-        )
+        source = get_monolingual_single_file_pair()
 
         result = extractor.extract(source)
 

@@ -39,7 +39,7 @@ class LanguageResult:
         file_path.write_text(self.text)
 
         if len(self.extra) > 0:
-            extra_path = result_dir / f"{self.source.document_path.stem}_{self.source.iso2_language}_extra.json"
+            extra_path = result_dir / f"{self.source.document_path.stem}_{self.source.iso2_language}_extra.txt"
             extra_path.write_text(str(self.extra))
 
 

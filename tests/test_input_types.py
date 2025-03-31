@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from patee import PageInfo, SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
+from tests.utils.mothers.sources import create_existing_single_file, get_existing_monolingual_single_file
 
 # Constants for testing
 TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
@@ -61,7 +62,7 @@ class TestSingleFile:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        single_file = SingleFile(document_path=str(TEXT_ES_FILE))
+        single_file = create_existing_single_file()
         assert isinstance(single_file.document_path, Path)
         assert single_file.document_path == TEXT_ES_FILE
 
@@ -70,7 +71,7 @@ class TestSingleFile:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        single_file = SingleFile(document_path=TEXT_ES_FILE)
+        single_file = create_existing_single_file()
         assert single_file.document_path == TEXT_ES_FILE
 
     def test_file_not_found(self, monkeypatch):
@@ -93,7 +94,7 @@ class TestMonolingualSingleFile:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        mono_file = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es")
+        mono_file = get_existing_monolingual_single_file()
         assert mono_file.document_path == TEXT_ES_FILE
         assert mono_file.iso2_language == "es"
         assert mono_file.page_info is None
@@ -104,11 +105,7 @@ class TestMonolingualSingleFile:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
-        mono_file = MonolingualSingleFile(
-            document_path=TEXT_ES_FILE,
-            iso2_language="es",
-            page_info=page_info
-        )
+        mono_file = get_existing_monolingual_single_file(page_info=page_info)
         assert mono_file.page_info == page_info
 
     def test_invalid_language_code(self, monkeypatch):
