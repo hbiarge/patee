@@ -4,68 +4,56 @@ from pathlib import Path
 from typing import Union
 
 from patee import MonolingualSingleFilePair, MultilingualSingleFile, StepMetadata
-from patee.steps import ParallelExtractStep, StepResult, ParallelProcessStep
+from patee.steps import ParallelExtractStep, StepResult, ParallelProcessStep, LanguageResult, LanguageResultSource
 
 logger = logging.getLogger(__name__)
 
 class StepsExecutor:
 
     @abstractmethod
-    def execute_extract_step(self, extract_step: ParallelExtractStep, metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        pass
-
-    @abstractmethod
-    def execute_process_step(self, process_step: ParallelProcessStep, metadata: StepMetadata,
-                             source: StepResult) -> StepResult:
+    def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
+                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
         pass
 
 
 class NonPersistentStepsExecutor(StepsExecutor):
 
-    def execute_extract_step(self, extract_step: ParallelExtractStep, metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        logger.info(f"start executing {extract_step.name} step...")
-        result = extract_step.extract(source=source)
-        logger.info(f"{extract_step.name} step executed in NotImplemented seconds")
+    def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
+                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+        logger.info("start executing %s step...", step.name)
+
+        if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
+            result = step.extract(source)
+        elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
+            result = step.process(source)
+        else:
+            raise ValueError("Unknown step type")
+
+        logger.info("%s step executed in %s seconds.", step.name, 0)
         return result
 
-    def execute_process_step(self, process_step: ParallelProcessStep, metadata: StepMetadata,
-                             source: StepResult) -> StepResult:
-        logger.info(f"start executing {process_step.name} step...")
-        result = process_step.process(source=source)
-        logger.info(f"{process_step.name} step executed in NotImplemented seconds")
-        return result
 
 class PersistentStepsExecutor(StepsExecutor):
     def __init__(self, base_dir: Path):
         self._base_dir: Path = base_dir
 
-    def execute_extract_step(self, extract_step: ParallelExtractStep, metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        step_dir = self._base_dir / extract_step.name
+    def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+        step_dir = self._base_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"start executing {extract_step.name} step...")
+        logger.info("start executing %s step...", step.name)
 
-        result = extract_step.extract(source=source)
+        if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
+            result = step.extract(source)
+        elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
+            result = step.process(source)
+        else:
+            raise ValueError("Unknown step type")
+
         result.write_to_files(step_dir)
 
-        logger.info(f"{extract_step.name} step executed in NotImplemented seconds")
-
-        return result
-
-    def execute_process_step(self, process_step: ParallelProcessStep, metadata: StepMetadata,
-                             source: StepResult) -> StepResult:
-        step_dir = self._base_dir / process_step.name
-        step_dir.mkdir(parents=True, exist_ok=True)
-
-        logger.info(f"start executing {process_step.name} step...")
-
-        result = process_step.process(source)
-        result.write_to_files(step_dir)
-
-        logger.info(f"{process_step.name} step executed in NotImplemented seconds")
+        logger.info("%s step executed in %s seconds.", step.name, 0)
 
         return result
 
@@ -80,56 +68,78 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
 
         if main_marker_file.exists():
             # TODO: Analyze marker file to determine if the source has been processed before
-            logger.info(f"the source with hash {source_hash} has been executed before in {base_dir}")
+            logger.info("the source with hash %s has been executed before in %s", source_hash, base_dir)
             self.source_has_been_previously_executed = True
         else:
-            logger.info(f"the source with hash {source_hash} has not been executed before in {base_dir}")
+            logger.info("the source with hash %s has not been executed before in %s", source_hash, base_dir)
             self.source_has_been_previously_executed = False
             # TODO: Create the main marker file
 
-
-    def execute_extract_step(self, extract_step: ParallelExtractStep, metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        step_dir = self._base_dir / extract_step.name
+    def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+        step_dir = self._base_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
         step_marker_file = step_dir / ".patee"
-
-        if self.source_has_been_previously_executed and step_marker_file.exists():
-            logger.info(f"the step {extract_step.name} for source hash {self._source_hash} have already been executed in {step_dir}. Skipping...")
-
-            # TODO: Analyze marker file to determine if the source has been processed before
-            # TODO: Create the result reading the files from the step_dir
-            return extract_step.extract(source=source)
-        else:
-            logger.info(f"start executing {extract_step.name} step...")
-
-            result = extract_step.extract(source=source)
-            result.write_to_files(step_dir)
-            # TODO: Create the step marker file
-
-            logger.info(f"{extract_step.name} step executed in NotImplemented seconds")
-
-            return result
-
-    def execute_process_step(self, process_step: ParallelProcessStep, metadata: StepMetadata, source: StepResult) -> StepResult:
-        step_dir = self._base_dir / process_step.name
-        step_marker_file = step_dir / ".patee"
-
-        step_dir.mkdir(parents=True, exist_ok=True)
+        step_metadata_hash = hash(metadata)
 
         if self.source_has_been_previously_executed and step_marker_file.exists():
             logger.info(
-                f"the step {process_step.name} for source hash {self._source_hash} have already been executed in {step_dir}. Skipping...")
+                "the step %s with metadata hash %s and source hash %s have already been executed in %s. Skipping...",
+                step.name, step_metadata_hash, self._source_hash, step_dir)
+
             # TODO: Analyze marker file to determine if the source has been processed before
             # TODO: Create the result reading the files from the step_dir
-            return process_step.process(source)
-        else:
-            logger.info(f"start executing {process_step.name} step...")
+            document_1_saved_result,document_2_saved_result = self._get_results_file_paths(step_dir, source)
 
-            result = process_step.process(source)
+            logger.debug("reading document 1 from %s ...", document_1_saved_result)
+            document_1_text = document_1_saved_result.read_text(encoding="utf-8")
+
+            logger.debug("reading document 2 from %s ...", document_2_saved_result)
+            document_2_text = document_2_saved_result.read_text(encoding="utf-8")
+
+            result = StepResult(
+                document_1=LanguageResult(
+                    source=LanguageResultSource.from_monolingual_file(source.document_1),
+                    text=document_1_text,
+                    extra={}
+                ),
+                document_2=LanguageResult(
+                    source=LanguageResultSource.from_monolingual_file(source.document_2),
+                    text=document_2_text,
+                    extra={}
+                ),
+            )
+
+            return result
+        else:
+            logger.info("start executing %s step...", step.name)
+
+            if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
+                result = step.extract(source)
+            elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
+                result = step.process(source)
+            else:
+                raise ValueError("Unknown step type")
+
             result.write_to_files(step_dir)
             # TODO: Create the step marker file
 
-            logger.info(f"{process_step.name} step executed in NotImplemented seconds")
+            logger.info("%s step executed in %s seconds", step.name, 0)
 
             return result
+
+    def _get_results_file_paths(self, step_dir: Path,
+                                source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]):
+        if isinstance(source, MonolingualSingleFilePair):
+            document_1_saved_result = step_dir / f"{source.document_1.document_path.stem}.txt"
+            document_2_saved_result = step_dir / f"{source.document_2.document_path.stem}.txt"
+        elif isinstance(source, MultilingualSingleFile):
+            document_1_saved_result = step_dir / f"{source.document_path.stem}-{source.iso2_languages[0]}.txt"
+            document_2_saved_result = step_dir / f"{source.document_path.stem}-{source.iso2_languages[1]}.txt"
+        elif isinstance(source, StepResult):
+            document_1_saved_result = step_dir / f"{source.document_1.source.document_path.stem}.txt"
+            document_2_saved_result = step_dir / f"{source.document_2.source.document_path.stem}.txt"
+        else:
+            raise ValueError("Unknown source type")
+
+        return document_1_saved_result, document_2_saved_result

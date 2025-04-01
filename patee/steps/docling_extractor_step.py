@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Union, Iterable
 
@@ -10,6 +11,9 @@ from docling_core.types.doc import NodeItem, DocItemLabel
 
 from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile, PageInfo, MonolingualSingleFile
 from patee.steps import ParallelExtractStep, StepResult, LanguageResult, LanguageResultSource
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -61,6 +65,8 @@ class DoclingExtractor(ParallelExtractStep):
         else:
             raise ValueError(f"Unsupported parser: {parser}. Supported parsers are 'docling' and 'pypdfium'.")
 
+        logger.info("DocumentConverter supported formats: %s", [f.name for f in self._converter.allowed_formats])
+
 
     def extract(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
         if isinstance(source, MonolingualSingleFilePair):
@@ -72,10 +78,15 @@ class DoclingExtractor(ParallelExtractStep):
 
 
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
+        logger.debug("converting document 1 from %s ...", source.document_1.document_path)
         document_1_result = self._convert_file(source.document_1, source.shared_page_info)
-        document_2_result = self._convert_file(source.document_2, source.shared_page_info)
+        logger.info("document 1 seen labels: &s", document_1_result.seen_labels)
 
-        return StepResult(
+        logger.debug("converting document 2 from %s ...",  source.document_2.document_path)
+        document_2_result = self._convert_file(source.document_2, source.shared_page_info)
+        logger.info("document 2 seen labels: &s", document_2_result.seen_labels)
+
+        result = StepResult(
             document_1=LanguageResult(
                 source=LanguageResultSource.from_monolingual_file(source.document_1),
                 text="\n".join(element[1] for element in document_1_result.extracted_text),
@@ -93,6 +104,10 @@ class DoclingExtractor(ParallelExtractStep):
                 }
             ),
         )
+
+        logger.debug("monolingual single file pairs converted successfully.")
+
+        return result
 
     def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
         raise NotImplementedError("Single file extraction is not implemented yet.")

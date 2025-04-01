@@ -1,8 +1,11 @@
+import logging
+
 from patee.steps import ParallelProcessStep, StepResult, LanguageResult
+
+logger = logging.getLogger(__name__)
 
 
 class NoopProcessorStep(ParallelProcessStep):
-
     def __init__(self, name: str, **kwargs):
         super().__init__(name=name)
 

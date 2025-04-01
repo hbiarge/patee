@@ -33,14 +33,14 @@ class Patee:
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
 
-        logger.debug(f"reading configuration file from {config_path}...")
+        logger.debug("reading configuration file from %s ...", config_path)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
         if not steps_builder:
-            logger.debug(f"no steps builder provided. Using default steps builder.")
+            logger.debug("no steps builder provided. Using default steps builder.")
             steps_builder = DefaultStepsBuilder()
         else:
-            logger.debug(f"using provided steps builder: {steps_builder.__class__.__name__}")
+            logger.debug("using provided steps builder: %s", steps_builder.__class__.__name__)
             steps_builder = steps_builder
 
         instance = cls(steps_builder)
@@ -52,7 +52,7 @@ class Patee:
             if not step_type:
                 raise ValueError("Step type is required in the configuration file.")
 
-            logger.debug(f"loading step {step_type} at position {step_idx}...")
+            logger.debug("loading step %s at position %s...", step_type, step_idx)
 
             step_name = step.get("name")
             if not step_name:
@@ -71,11 +71,11 @@ class Patee:
             instance._steps.append((step_instance, metadata))
             unique_step_names.add(step_name)
 
-            logger.debug(f"step {step_type} with name {step_name} loaded successfully.")
+            logger.debug("step %s with name %s loaded successfully.", step_type, step_name)
 
             step_idx += 1
 
-        logger.info(f"pipeline created successfully. Found {len(unique_step_names)} step(s).")
+        logger.info("pipeline created successfully. Found %s step(s).", len(unique_step_names))
 
         return instance
 
@@ -91,25 +91,25 @@ class Patee:
 
         source_hash = hash(source)
 
-        logger.debug(f"start processing source with hash {source_hash}...")
+        logger.debug("start processing source with hash %s...", source_hash)
 
         if out_dir is None:
-            logger.debug(f"no output directory provided. creating a NonPersistentStepsExecutor steps executor.")
+            logger.debug("no output directory provided. creating a NonPersistentStepsExecutor steps executor.")
             executor = NonPersistentStepsExecutor()
         else:
             # Validate the directory exists
             if not out_dir.exists():
                 raise FileNotFoundError(f"Output directory {out_dir} does not exist.")
 
-            logger.debug(f" output directory provided: {out_dir}. creating a PersistentStepsExecutor steps executor.")
+            logger.debug(" output directory provided: %s. creating a PersistentStepsExecutor steps executor.", out_dir)
             executor = PersistentStepsExecutor(base_dir=out_dir)
 
         extract_step, extract_metadata = self._steps[0]
-        extract_result = executor.execute_extract_step(cast(ParallelExtractStep ,extract_step), extract_metadata, source)
+        extract_result = executor.execute_step(cast(ParallelExtractStep ,extract_step), extract_metadata, source)
 
         step_result = extract_result
         for step, metadata in self._steps[1:]:
-            step_result = executor.execute_process_step(cast(ParallelProcessStep ,step), metadata, step_result)
+            step_result = executor.execute_step(cast(ParallelProcessStep ,step), metadata, step_result)
 
         return step_result
 
