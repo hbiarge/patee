@@ -29,13 +29,6 @@ class TestPatee:
 
         assert patee.step_names == ["01_process"]
 
-    def test_patee_is_valid(self):
-        builder = FakeStepsBuilder()
-        patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
-
-        assert patee.is_valid == True
-
-
     def test_patee_can_process_without_out_dir(self):
         builder = FakeStepsBuilder()
         patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)

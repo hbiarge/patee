@@ -8,6 +8,7 @@ from patee import (MultilingualSingleFile, MonolingualSingleFilePair, NonPersist
                    PersistentStepsExecutor, StepsBuilder, DefaultStepsBuilder, StepMetadata)
 from patee.steps import ParallelExtractStep, ParallelProcessStep, StepResult
 
+logger = logging.getLogger(__name__)
 
 class Patee:
     """Main pipeline class to coordinate the processing steps."""
@@ -25,42 +26,40 @@ class Patee:
         """Return the name of the steps."""
         return [step.name for step, _ in self._steps]
 
-    @property
-    def is_valid(self) -> bool:
-        if not self._steps:
-            return False
-
-        first_step, _ = self._steps[0]
-        if not isinstance(first_step, ParallelExtractStep):
-            return False
-
-        for step, _ in self._steps[1:]:
-            if not isinstance(step, ParallelProcessStep):
-                return False
-
-        return True
-
     @classmethod
-    def load_from(cls, steps_config_path: Path, steps_builder: StepsBuilder = None) -> "Patee":
+    def load_from(cls, config_path: Path, steps_builder: StepsBuilder = None) -> "Patee":
         """Load the pipeline from a configuration file."""
         # Validate the config file exists
-        if not steps_config_path.exists():
-            raise FileNotFoundError(f"Configuration file {steps_config_path} does not exist.")
+        if not config_path.exists():
+            raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
 
-        config = yaml.safe_load(steps_config_path.read_text(encoding="utf-8"))
-        steps_builder = steps_builder or DefaultStepsBuilder()
+        logger.debug(f"reading configuration file from {config_path}...")
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+        if not steps_builder:
+            logger.debug(f"no steps builder provided. Using default steps builder.")
+            steps_builder = DefaultStepsBuilder()
+        else:
+            logger.debug(f"using provided steps builder: {steps_builder.__class__.__name__}")
+            steps_builder = steps_builder
 
         instance = cls(steps_builder)
 
         step_idx = 0
+        unique_step_names = set()
         for step in config["steps"]:
             step_type = step.get("type")
             if not step_type:
                 raise ValueError("Step type is required in the configuration file.")
 
+            logger.debug(f"loading step {step_type} at position {step_idx}...")
+
             step_name = step.get("name")
             if not step_name:
                 step_name = step_type
+
+            if step_name in unique_step_names:
+                raise ValueError(f"Step names must be unique. Duplicate name found: {step_name}")
 
             step_config = step.get("config")
             if not step_config:
@@ -70,13 +69,13 @@ class Patee:
             step_instance = instance._steps_builder.build(step_type, step_name, **step_config)
 
             instance._steps.append((step_instance, metadata))
+            unique_step_names.add(step_name)
+
+            logger.debug(f"step {step_type} with name {step_name} loaded successfully.")
+
             step_idx += 1
 
-        unique_step_names = set(step.name for step, _ in instance._steps)
-        if len(unique_step_names) != len(instance._steps):
-            raise ValueError("Step names must be unique in the pipeline configuration.")
-
-        logging.debug(f"Pipeline created successfully. Found {len(unique_step_names)} unique step names.")
+        logger.info(f"pipeline created successfully. Found {len(unique_step_names)} step(s).")
 
         return instance
 
@@ -90,13 +89,19 @@ class Patee:
         # Validate state of the pipeline is correct to start processing the source
         self._validate_steps_for_process()
 
+        source_hash = hash(source)
+
+        logger.debug(f"start processing source with hash {source_hash}...")
+
         if out_dir is None:
+            logger.debug(f"no output directory provided. creating a NonPersistentStepsExecutor steps executor.")
             executor = NonPersistentStepsExecutor()
         else:
             # Validate the directory exists
             if not out_dir.exists():
                 raise FileNotFoundError(f"Output directory {out_dir} does not exist.")
 
+            logger.debug(f" output directory provided: {out_dir}. creating a PersistentStepsExecutor steps executor.")
             executor = PersistentStepsExecutor(base_dir=out_dir)
 
         extract_step, extract_metadata = self._steps[0]

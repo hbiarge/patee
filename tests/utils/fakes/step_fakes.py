@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Iterable
 
 from patee import MonolingualSingleFilePair, MultilingualSingleFile
 from patee.steps_builder import DefaultStepsBuilder
@@ -7,6 +7,8 @@ from patee.steps.core_step_types import ParallelProcessStep, LanguageResult
 
 
 class FakeStepsBuilder(DefaultStepsBuilder):
+    def get_supported_step_types(self) -> set[str]:
+        return super().get_supported_step_types().union({"extract_fake", "text_fake"})
 
     def build(self, step_type: str, step_name:str, **kwargs) -> Step:
         try:

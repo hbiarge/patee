@@ -8,6 +8,14 @@ class TestDefaultStepsBuilder:
     def setup_method(self):
         self.builder = DefaultStepsBuilder()
 
+    def test_get_supported_step_types(self):
+        expected_types: set[str] = {
+            "text_reader_extractor",
+            "docling_extractor",
+            "noop_step",
+        }
+        assert self.builder.get_supported_step_types() == expected_types
+
     def test_build_text_reader_extractor(self):
         # Test creating a TextReaderExtractor step
         step = self.builder.build("text_reader_extractor", "text_reader")
