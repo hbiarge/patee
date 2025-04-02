@@ -4,8 +4,15 @@ from typing import Union, Iterable, cast
 
 import yaml
 
-from patee import (MultilingualSingleFile, MonolingualSingleFilePair, NonPersistentStepsExecutor,
-                   PersistentStepsExecutor, StepsBuilder, DefaultStepsBuilder, StepMetadata)
+from patee import (
+    MultilingualSingleFile,
+    MonolingualSingleFilePair,
+    NonPersistentStepsExecutor,
+    PersistentStepsExecutor,
+    StepsBuilder,
+    DefaultStepsBuilder,
+    StepMetadata,
+)
 from patee.steps import ParallelExtractStep, ParallelProcessStep, StepResult
 
 logger = logging.getLogger(__name__)
@@ -54,6 +61,7 @@ class Patee:
 
             logger.debug("loading step %s at position %s...", step_type, step_idx)
 
+            # TODO: Add step index to folder name
             step_name = step.get("name")
             if not step_name:
                 step_name = step_type
@@ -91,7 +99,7 @@ class Patee:
 
         source_hash = hash(source)
 
-        logger.debug("start processing source with hash %s...", source_hash)
+        logger.info("start processing source with hash %s ...", source_hash)
 
         if out_dir is None:
             logger.debug("no output directory provided. creating a NonPersistentStepsExecutor steps executor.")
@@ -101,7 +109,7 @@ class Patee:
             if not out_dir.exists():
                 raise FileNotFoundError(f"Output directory {out_dir} does not exist.")
 
-            logger.debug(" output directory provided: %s. creating a PersistentStepsExecutor steps executor.", out_dir)
+            logger.debug(" output directory provided: %s. Creating a PersistentStepsExecutor steps executor.", out_dir)
             executor = PersistentStepsExecutor(base_dir=out_dir)
 
         extract_step, extract_metadata = self._steps[0]
@@ -109,7 +117,11 @@ class Patee:
 
         step_result = extract_result
         for step, metadata in self._steps[1:]:
-            step_result = executor.execute_step(cast(ParallelProcessStep ,step), metadata, step_result)
+            step_result = executor.execute_step(cast(ParallelProcessStep ,step), metadata, step_result.context)
+
+            if step_result.should_stop_pipeline:
+                logger.warning("pipeline stopped at step %s with name %s.", metadata.type, metadata.name)
+                break
 
         return step_result
 

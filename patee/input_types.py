@@ -86,6 +86,8 @@ class MonolingualSingleFile(SingleFile):
         return NotImplemented
 
     def __post_init__(self):
+        super().__post_init__()
+
         # Validate language code
         if len(self.iso2_language) != 2:
             raise ValueError(f"iso2_language must be a 2-letter ISO code, got {self.iso2_language}")
@@ -98,8 +100,6 @@ class MonolingualSingleFilePair:
     document_1: MonolingualSingleFile
     document_2: MonolingualSingleFile
     shared_page_info: PageInfo = None
-
-    
 
     def __post_init__(self):
         # Documents should define different languages

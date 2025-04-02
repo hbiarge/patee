@@ -9,9 +9,20 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import NodeItem, DocItemLabel
 
-from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile, PageInfo, MonolingualSingleFile
-from patee.steps import ParallelExtractStep, StepResult, LanguageResult, LanguageResultSource
-
+from patee import (
+    MonolingualSingleFilePair,
+    MultilingualSingleFile,
+    PageInfo,
+    MonolingualSingleFile,
+)
+from patee.steps import (
+    ParallelExtractStep,
+    DocumentPairContext,
+    StepResult,
+    DocumentContext,
+    DocumentSource,
+    StepContext,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +78,12 @@ class DoclingExtractor(ParallelExtractStep):
 
         logger.info("DocumentConverter supported formats: %s", [f.name for f in self._converter.allowed_formats])
 
+    @staticmethod
+    def step_type() -> str:
+        return "docling_extractor"
 
-    def extract(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+    def extract(self, context: StepContext,
+                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
         if isinstance(source, MonolingualSingleFilePair):
             return self._extract_file_pair(source)
         elif isinstance(source, MultilingualSingleFile):
@@ -80,29 +95,32 @@ class DoclingExtractor(ParallelExtractStep):
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
         logger.debug("converting document 1 from %s ...", source.document_1.document_path)
         document_1_result = self._convert_file(source.document_1, source.shared_page_info)
-        logger.info("document 1 seen labels: %s", document_1_result.seen_labels)
+        logger.info("document 1 seen labels: %s", [str(label) for label in document_1_result.seen_labels])
 
         logger.debug("converting document 2 from %s ...",  source.document_2.document_path)
         document_2_result = self._convert_file(source.document_2, source.shared_page_info)
-        logger.info("document 2 seen labels: %s", document_2_result.seen_labels)
+        logger.info("document 2 seen labels: %s", [str(label) for label in document_2_result.seen_labels])
 
-        result = StepResult(
-            document_1=LanguageResult(
-                source=LanguageResultSource.from_monolingual_file(source.document_1),
+        context = DocumentPairContext(
+            document_1=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_1),
                 text="\n".join(element[1] for element in document_1_result.extracted_text),
                 extra={
-                "excluded_text": document_1_result.excluded_text,
-                "seen_labels": document_1_result.seen_labels
+                    "excluded_text": document_1_result.excluded_text,
+                    "seen_labels": [label for label in document_1_result.seen_labels]
                 }
             ),
-            document_2=LanguageResult(
-                source=LanguageResultSource.from_monolingual_file(source.document_2),
+            document_2=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_2),
                 text="\n".join(element[1] for element in document_2_result.extracted_text),
                 extra={
                     "excluded_text": document_2_result.excluded_text,
-                    "seen_labels": document_2_result.seen_labels
+                    "seen_labels": [label for label in document_2_result.seen_labels]
                 }
             ),
+        )
+        result = StepResult(
+            context=context,
         )
 
         logger.debug("monolingual single file pairs converted successfully.")

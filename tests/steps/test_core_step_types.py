@@ -1,17 +1,240 @@
+import json
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 
-from patee import MonolingualSingleFile, MultilingualSingleFile
+from patee import MultilingualSingleFile, MonolingualSingleFile
 from patee.steps import (
+    StepContext,
     Step,
-    LanguageResultSource,
-    LanguageResult,
+    DocumentSource,
+    DocumentContext,
+    DocumentPairContext,
     StepResult,
     ParallelExtractStep,
-    ParallelProcessStep
+    ParallelProcessStep,
 )
+from tests.utils.mothers.sources import get_existing_pdf_file
+
+
+class TestStepContext:
+    def test_initialization_without_dir(self):
+        step_context = StepContext(step_dir=None)
+        assert step_context.step_dir is None
+
+    def test_initialization_with_dir(self):
+        step_dir = Path("/path/to/step")
+        step_context = StepContext(step_dir=step_dir)
+        assert step_context.step_dir == step_dir
+
+
+class TestDocumentSource:
+    def test_initialization(self):
+        path = Path("/path/to/file.pdf")
+        language = "es"
+        source = DocumentSource(path, language)
+        assert source.document_path == path
+        assert source.iso2_language == language
+
+    def test_from_monolingual_file(self):
+        path = get_existing_pdf_file()
+        language = "fr"
+        mono_file = MonolingualSingleFile(
+            document_path=path,
+            iso2_language=language,
+        )
+
+        source = DocumentSource.from_monolingual_file(mono_file)
+        assert source.document_path == path
+        assert source.iso2_language == language
+
+    def test_from_multilingual_file(self):
+        path = get_existing_pdf_file()
+        languages = ["en", "es"]
+        multi_file = MultilingualSingleFile(
+            document_path=path,
+            iso2_languages=languages,
+        )
+
+        source_0 = DocumentSource.from_multilingual_file(multi_file, 0)
+        source_1 = DocumentSource.from_multilingual_file(multi_file, 1)
+
+        assert source_0.document_path == path
+        assert source_0.iso2_language == "en"
+        assert source_1.document_path == path
+        assert source_1.iso2_language == "es"
+
+
+class TestDocumentContext:
+    def test_initialization(self):
+        source = DocumentSource(Path("/path/to/file.pdf"), "en")
+        text = "Sample text content"
+        extra = {"metadata": "test metadata"}
+
+        doc_context = DocumentContext(source, text, extra)
+        assert doc_context.source == source
+        assert doc_context.text == text
+        assert doc_context.extra == extra
+
+    def test_dump_to(self, tmp_path):
+        source = DocumentSource(Path("document.pdf"), "en")
+        text = "Sample text content"
+        extra = {"metadata": "test metadata"}
+
+        doc_context = DocumentContext(source, text, extra)
+        doc_context.dump_to(tmp_path)
+
+        # Check text file was created with correct content
+        text_path = tmp_path / "document.txt"
+        assert text_path.exists()
+        assert text_path.read_text() == text
+
+        # Check extra file was created with correct content
+        extra_path = tmp_path / "document_extra.json"
+        assert extra_path.exists()
+        assert json.loads(extra_path.read_text()) == extra
+
+    def test_dump_to_no_extra(self, tmp_path):
+        source = DocumentSource(Path("document.pdf"), "en")
+        text = "Sample text content"
+        extra = {}  # Empty extra
+
+        doc_context = DocumentContext(source, text, extra)
+        doc_context.dump_to(tmp_path)
+
+        # Check text file was created
+        text_path = tmp_path / "document.txt"
+        assert text_path.exists()
+
+        # No extra file should be created
+        extra_path = tmp_path / "document_extra.json"
+        assert not extra_path.exists()
+
+    def test_load_from(self, tmp_path):
+        # Create original context
+        source = DocumentSource(Path("document.pdf"), "en")
+        original_text = "Original text"
+        original_extra = {"metadata": "original"}
+
+        original_context = DocumentContext(source, original_text, original_extra)
+
+        # Write text file with new content
+        text_file = tmp_path / "document.txt"
+        new_text = "New loaded text"
+        text_file.write_text(new_text)
+
+        # Load from the directory
+        loaded_context = DocumentContext.load_from(original_context, tmp_path)
+
+        # Check loaded content
+        assert loaded_context.source == original_context.source
+        assert loaded_context.text == new_text
+        assert loaded_context.extra == {}  # Should be empty since no extra file
+
+    def test_load_from_invalid_dir(self):
+        source = DocumentSource(Path("document.pdf"), "en")
+        original_context = DocumentContext(source, "text", {})
+
+        with pytest.raises(ValueError, match="is not a directory"):
+            DocumentContext.load_from(original_context, Path("/non/existent/path"))
+
+
+class TestDocumentPairContext:
+    def test_initialization(self):
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "English text", {"lang": "en"})
+        doc2 = DocumentContext(source2, "Spanish text", {"lang": "es"})
+
+        pair = DocumentPairContext(doc1, doc2)
+        assert pair.document_1 == doc1
+        assert pair.document_2 == doc2
+
+    def test_dump_to(self, tmp_path):
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "English text", {"lang": "en"})
+        doc2 = DocumentContext(source2, "Spanish text", {"lang": "es"})
+
+        pair = DocumentPairContext(doc1, doc2)
+        pair.dump_to(tmp_path)
+
+        # Check files were created for both documents
+        assert (tmp_path / "doc1.txt").exists()
+        assert (tmp_path / "doc2.txt").exists()
+        assert (tmp_path / "doc1_extra.json").exists()
+        assert (tmp_path / "doc2_extra.json").exists()
+
+    def test_dump_to_invalid_dir(self):
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "English text", {})
+        doc2 = DocumentContext(source2, "Spanish text", {})
+
+        pair = DocumentPairContext(doc1, doc2)
+
+        with pytest.raises(ValueError, match="is not a directory"):
+            pair.dump_to(Path("/non/existent/path"))
+
+    def test_read_from(self, tmp_path):
+        # Create original pair context
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "Original English", {"lang": "en"})
+        doc2 = DocumentContext(source2, "Original Spanish", {"lang": "es"})
+
+        original_pair = DocumentPairContext(doc1, doc2)
+
+        # Write files with new content
+        (tmp_path / "doc1.txt").write_text("New English text")
+        (tmp_path / "doc2.txt").write_text("New Spanish text")
+
+        # Read from directory
+        loaded_pair = DocumentPairContext.read_from(original_pair, tmp_path)
+
+        # Check loaded content
+        assert loaded_pair.document_1.source == doc1.source
+        assert loaded_pair.document_2.source == doc2.source
+        assert loaded_pair.document_1.text == "New English text"
+        assert loaded_pair.document_2.text == "New Spanish text"
+        assert loaded_pair.document_1.extra == {}
+        assert loaded_pair.document_2.extra == {}
+
+    def test_read_from_invalid_dir(self):
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "English text", {})
+        doc2 = DocumentContext(source2, "Spanish text", {})
+
+        pair = DocumentPairContext(doc1, doc2)
+
+        with pytest.raises(ValueError, match="is not a directory"):
+            DocumentPairContext.read_from(pair, Path("/non/existent/path"))
+
+
+class TestStepResult:
+    def test_initialization_with_context(self):
+        source1 = DocumentSource(Path("doc1.pdf"), "en")
+        source2 = DocumentSource(Path("doc2.pdf"), "es")
+
+        doc1 = DocumentContext(source1, "English text", {})
+        doc2 = DocumentContext(source2, "Spanish text", {})
+
+        pair = DocumentPairContext(doc1, doc2)
+        result = StepResult(pair, False)
+
+        assert result.context == pair
+        assert result.should_stop_pipeline is False
+
+    def test_initialization_without_context(self):
+        result = StepResult(None, True)
+        assert result.context is None
+        assert result.should_stop_pipeline is True
 
 
 class TestStep:
@@ -21,99 +244,20 @@ class TestStep:
         assert step.name == step_name
 
 
-class TestLanguageResultSource:
-    def test_initialization(self):
-        path = Path("/path/to/file.pdf")
-        language = "es"
-        source = LanguageResultSource(path, language)
-
-        assert source.document_path == path
-        assert source.iso2_language == language
-
-    def test_from_monolingual_file(self):
-        path = Path("/path/to/file.pdf")
-        language = "fr"
-        mono_file = Mock(spec=MonolingualSingleFile)
-        mono_file.document_path = path
-        mono_file.iso2_language = language
-
-        source = LanguageResultSource.from_monolingual_file(mono_file)
-
-        assert source.document_path == path
-        assert source.iso2_language == language
-
-    def test_from_multilingual_file(self):
-        path = Path("/path/to/multilingual.pdf")
-        languages = ["en", "es"]
-        multi_file = Mock(spec=MultilingualSingleFile)
-        multi_file.document_path = path
-        multi_file.iso2_languages = languages
-
-        # Test with different language indexes
-        source_0 = LanguageResultSource.from_multilingual_file(multi_file, 0)
-        source_1 = LanguageResultSource.from_multilingual_file(multi_file, 1)
-
-        assert source_0.document_path == path
-        assert source_0.iso2_language == "en"
-
-        assert source_1.document_path == path
-        assert source_1.iso2_language == "es"
-
-
-class TestLanguageResult:
-    def test_initialization(self):
-        source = Mock(spec=LanguageResultSource)
-        source.document_path = Path("/path/to/file.pdf")
-        source.iso2_language = "en"
-
-        text = "Sample text content"
-        extra = {"metadata": "test metadata"}
-
-        result = LanguageResult(source, text, extra)
-
-        assert result.source == source
-        assert result.text == text
-        assert result.extra == extra
-
-
-class TestStepResult:
-    def test_initialization(self):
-        doc1 = Mock(spec=LanguageResult)
-        doc2 = Mock(spec=LanguageResult)
-
-        step_result = StepResult(doc1, doc2)
-
-        assert step_result.document_1 == doc1
-        assert step_result.document_2 == doc2
-
-    def test_write_to_files(self, tmp_path):
-        # Create mocked language results
-        doc1 = Mock(spec=LanguageResult)
-        doc2 = Mock(spec=LanguageResult)
-
-        step_result = StepResult(doc1, doc2)
-        step_result.write_to_files(tmp_path)
-
-        # Verify both documents' write_to_file methods were called
-        doc1.write_to_file.assert_called_once_with(tmp_path)
-        doc2.write_to_file.assert_called_once_with(tmp_path)
-
-
 class TestParallelExtractStep:
     def test_initialization(self):
         step_name = "extract_step"
 
-        # We can't instantiate the abstract class directly, so we create a concrete subclass
+        # Create a concrete subclass to test
         class ConcreteExtractStep(ParallelExtractStep):
-            def extract(self, source):
-                return Mock(spec=StepResult)
+            def extract(self, context, source):
+                return StepResult(None)
 
         step = ConcreteExtractStep(step_name)
         assert step.name == step_name
         assert issubclass(ConcreteExtractStep, Step)
 
     def test_abstract_method(self):
-        # Verify that instantiating the abstract class raises TypeError
         with pytest.raises(TypeError):
             ParallelExtractStep("abstract_step")
 
@@ -122,16 +266,15 @@ class TestParallelProcessStep:
     def test_initialization(self):
         step_name = "process_step"
 
-        # We can't instantiate the abstract class directly, so we create a concrete subclass
+        # Create a concrete subclass to test
         class ConcreteProcessStep(ParallelProcessStep):
-            def process(self, source):
-                return Mock(spec=StepResult)
+            def process(self, context, source):
+                return StepResult(None)
 
         step = ConcreteProcessStep(step_name)
         assert step.name == step_name
         assert issubclass(ConcreteProcessStep, Step)
 
     def test_abstract_method(self):
-        # Verify that instantiating the abstract class raises TypeError
         with pytest.raises(TypeError):
             ParallelProcessStep("abstract_step")

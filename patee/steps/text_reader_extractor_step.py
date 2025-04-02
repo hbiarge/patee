@@ -2,7 +2,9 @@ import logging
 from typing import Union
 
 from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
-from patee.steps import ParallelExtractStep, StepResult, LanguageResult, LanguageResultSource
+from patee.steps import ParallelExtractStep, StepResult, DocumentContext, DocumentSource, StepContext, \
+    DocumentPairContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +13,12 @@ class TextReaderExtractor(ParallelExtractStep):
     def __init__(self, name: str, **kwargs):
         super().__init__(name)
 
-    def extract(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+    @staticmethod
+    def step_type() -> str:
+        return "text_reader_extractor"
+
+    def extract(self, context: StepContext,
+                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
         if isinstance(source, MonolingualSingleFilePair):
             return self._extract_file_pair(source)
         elif isinstance(source, MultilingualSingleFile):
@@ -26,17 +33,20 @@ class TextReaderExtractor(ParallelExtractStep):
         logger.debug("reading document 2 from %s ...", source.document_2.document_path)
         document_2_text = source.document_2.document_path.read_text(encoding="utf-8")
 
-        result = StepResult(
-            document_1=LanguageResult(
-                source=LanguageResultSource.from_monolingual_file(source.document_1),
+        context = DocumentPairContext(
+            document_1=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_1),
                 text=document_1_text,
                 extra={}
             ),
-            document_2=LanguageResult(
-                source=LanguageResultSource.from_monolingual_file(source.document_2),
+            document_2=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_2),
                 text=document_2_text,
                 extra={}
             ),
+        )
+        result = StepResult(
+            context=context,
         )
 
         logger.debug("monolingual single file pairs read successfully.")

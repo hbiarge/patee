@@ -12,7 +12,8 @@ class TestDefaultStepsBuilder:
         expected_types: set[str] = {
             "text_reader_extractor",
             "docling_extractor",
-            "noop_step",
+            "noop_step_processor",
+            "human_in_the_loop_processor",
         }
         assert self.builder.get_supported_step_types() == expected_types
 
@@ -32,7 +33,7 @@ class TestDefaultStepsBuilder:
 
     def test_build_noop_step(self):
         # Test creating a NoopProcessorStep
-        step = self.builder.build("noop_step", "noop")
+        step = self.builder.build("noop_step_processor", "noop")
 
         assert isinstance(step, NoopProcessorStep)
         assert step.name == "noop"

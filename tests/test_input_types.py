@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from patee import PageInfo, SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
-from tests.utils.mothers.sources import create_existing_single_file, get_existing_monolingual_single_file
+from tests.utils.mothers.sources import get_existing_single_file, get_existing_monolingual_single_file
 
 # Constants for testing
 TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
@@ -62,7 +62,7 @@ class TestSingleFile:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        single_file = create_existing_single_file()
+        single_file = get_existing_single_file()
         assert isinstance(single_file.document_path, Path)
         assert single_file.document_path == TEXT_ES_FILE
 
@@ -71,7 +71,7 @@ class TestSingleFile:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        single_file = create_existing_single_file()
+        single_file = get_existing_single_file()
         assert single_file.document_path == TEXT_ES_FILE
 
     def test_file_not_found(self, monkeypatch):

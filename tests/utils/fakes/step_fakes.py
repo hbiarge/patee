@@ -1,9 +1,15 @@
-from typing import Union, Iterable
+from typing import Union
 
-from patee import MonolingualSingleFilePair, MultilingualSingleFile
-from patee.steps_builder import DefaultStepsBuilder
-from patee.steps import ParallelExtractStep, StepResult, Step, LanguageResultSource
-from patee.steps.core_step_types import ParallelProcessStep, LanguageResult
+from patee import MonolingualSingleFilePair, MultilingualSingleFile, DefaultStepsBuilder
+from patee.steps import (
+    ParallelExtractStep,
+    StepResult,
+    Step,
+    DocumentSource,
+    StepContext,
+    ParallelProcessStep,
+    DocumentContext, DocumentPairContext,
+)
 
 
 class FakeStepsBuilder(DefaultStepsBuilder):
@@ -26,32 +32,41 @@ class FakeExtractor(ParallelExtractStep):
     def __init__(self, name: str):
         super().__init__(name)
 
-    def extract(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+    def extract(self, context: StepContext,
+                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
         if isinstance(source, MonolingualSingleFilePair):
-            return StepResult(
-                document_1=LanguageResult(
-                    source=LanguageResultSource(document_path=source.document_1.document_path, iso2_language=source.document_1.iso2_language),
+            context = DocumentPairContext(
+                document_1=DocumentContext(
+                    source=DocumentSource(document_path=source.document_1.document_path,
+                                          iso2_language=source.document_1.iso2_language),
                     text="fake text 1",
                     extra={},
                 ),
-                document_2=LanguageResult(
-                    source=LanguageResultSource(document_path=source.document_2.document_path, iso2_language=source.document_2.iso2_language),
+                document_2=DocumentContext(
+                    source=DocumentSource(document_path=source.document_2.document_path,
+                                          iso2_language=source.document_2.iso2_language),
                     text="fake text 2",
                     extra={},
                 ),
             )
-        elif isinstance(source, MultilingualSingleFile):
             return StepResult(
-                document_1=LanguageResult(
-                    source=LanguageResultSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
+                context=context,
+            )
+        elif isinstance(source, MultilingualSingleFile):
+            context = DocumentPairContext(
+                document_1=DocumentContext(
+                    source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
                     text="fake text 1",
                     extra={},
                 ),
-                document_2=LanguageResult(
-                    source=LanguageResultSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
+                document_2=DocumentContext(
+                    source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
                     text="fake text 2",
                     extra={},
                 ),
+            )
+            return StepResult(
+                context=context,
             )
         else:
             raise ValueError(f"Unsupported source type: {type(source)}")
@@ -61,16 +76,19 @@ class FakeProcessor(ParallelProcessStep):
     def __init__(self, name: str):
         super().__init__(name)
 
-    def process(self, source: StepResult) -> StepResult:
-        return StepResult(
-            document_1=LanguageResult(
+    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+        context = DocumentPairContext(
+            document_1=DocumentContext(
                 source=source.document_1.source,
                 text=source.document_1.text + " fake",
                 extra={},
             ),
-            document_2=LanguageResult(
+            document_2=DocumentContext(
                 source=source.document_2.source,
                 text=source.document_2.text + " fake",
                 extra={},
-            )
+            ),
+        )
+        return StepResult(
+            context=context,
         )

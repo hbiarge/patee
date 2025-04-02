@@ -1,5 +1,9 @@
-from patee.steps import NoopProcessorStep
+from pathlib import Path
+
+from patee.steps import NoopProcessorStep, StepContext
 from tests.utils.mothers.sources import get_step_result
+
+OUT_DIR = Path(__file__).parent / "out" / "noop_processor_step"
 
 
 class TestNoopProcessorStep:
@@ -12,8 +16,12 @@ class TestNoopProcessorStep:
         extractor = NoopProcessorStep("no-op")
 
         step_result = get_step_result()
+        context = StepContext(step_dir=None)
 
-        result = extractor.process(step_result)
+        result = extractor.process(context, step_result.context)
 
-        assert result.document_1.text == "patata"
-        assert result.document_2.text == "petete"
+        OUT_DIR.mkdir(exist_ok=True)
+        result.context.dump_to(OUT_DIR)
+
+        assert result.context.document_1.text == "patata"
+        assert result.context.document_2.text == "petete"

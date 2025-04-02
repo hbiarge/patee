@@ -1,31 +1,40 @@
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import Union
 
 from patee import MonolingualSingleFilePair, MultilingualSingleFile, StepMetadata
-from patee.steps import ParallelExtractStep, StepResult, ParallelProcessStep, LanguageResult, LanguageResultSource
+from patee.steps import (
+    StepContext,
+    ParallelExtractStep,
+    StepResult,
+    ParallelProcessStep,
+    DocumentContext,
+    DocumentSource,
+    DocumentPairContext,
+)
 
 logger = logging.getLogger(__name__)
 
-class StepsExecutor:
 
+class StepsExecutor(ABC):
     @abstractmethod
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
         pass
 
 
 class NonPersistentStepsExecutor(StepsExecutor):
-
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                             source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
-        logger.info("start executing %s step...", step.name)
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
+        logger.info("start executing %s step in non persistent mode...", step.name)
 
-        if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
-            result = step.extract(source)
-        elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
-            result = step.process(source)
+        context = StepContext(step_dir=None)
+
+        if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
+            result = step.extract(context, source)
+        elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
+            result = step.process(context, source)
         else:
             raise ValueError("Unknown step type")
 
@@ -38,20 +47,22 @@ class PersistentStepsExecutor(StepsExecutor):
         self._base_dir: Path = base_dir
 
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
         step_dir = self._base_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("start executing %s step...", step.name)
+        logger.info("start executing %s step in persistent mode...", step.name)
 
-        if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
-            result = step.extract(source)
-        elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
-            result = step.process(source)
+        context = StepContext(step_dir=step_dir)
+
+        if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
+            result = step.extract(context, source)
+        elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
+            result = step.process(context, source)
         else:
             raise ValueError("Unknown step type")
 
-        result.write_to_files(step_dir)
+        result.context.dump_to(step_dir)
 
         logger.info("%s step executed in %s seconds.", step.name, 0)
 
@@ -76,7 +87,7 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
             # TODO: Create the main marker file
 
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]) -> StepResult:
+                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
         step_dir = self._base_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
         step_marker_file = step_dir / ".patee"
@@ -97,31 +108,36 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
             logger.debug("reading document 2 from %s ...", document_2_saved_result)
             document_2_text = document_2_saved_result.read_text(encoding="utf-8")
 
-            result = StepResult(
-                document_1=LanguageResult(
-                    source=LanguageResultSource.from_monolingual_file(source.document_1),
+            context = DocumentPairContext(
+                document_1=DocumentContext(
+                    source=DocumentSource.from_monolingual_file(source.document_1),
                     text=document_1_text,
                     extra={}
                 ),
-                document_2=LanguageResult(
-                    source=LanguageResultSource.from_monolingual_file(source.document_2),
+                document_2=DocumentContext(
+                    source=DocumentSource.from_monolingual_file(source.document_2),
                     text=document_2_text,
                     extra={}
                 ),
             )
+            result = StepResult(
+                context=context,
+            )
 
             return result
         else:
-            logger.info("start executing %s step...", step.name)
+            logger.info("start executing %s step in persistent mode...", step.name)
 
-            if isinstance(step, ParallelExtractStep) and not isinstance(source, StepResult):
-                result = step.extract(source)
-            elif isinstance(step, ParallelProcessStep) and isinstance(source, StepResult):
-                result = step.process(source)
+            context = StepContext(step_dir=step_dir)
+
+            if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
+                result = step.extract(context, source)
+            elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
+                result = step.process(context, source)
             else:
                 raise ValueError("Unknown step type")
 
-            result.write_to_files(step_dir)
+            result.context.dump_to(step_dir)
             # TODO: Create the step marker file
 
             logger.info("%s step executed in %s seconds", step.name, 0)
@@ -129,14 +145,14 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
             return result
 
     def _get_results_file_paths(self, step_dir: Path,
-                                source: Union[MonolingualSingleFilePair, MultilingualSingleFile, StepResult]):
+                                source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]):
         if isinstance(source, MonolingualSingleFilePair):
             document_1_saved_result = step_dir / f"{source.document_1.document_path.stem}.txt"
             document_2_saved_result = step_dir / f"{source.document_2.document_path.stem}.txt"
         elif isinstance(source, MultilingualSingleFile):
             document_1_saved_result = step_dir / f"{source.document_path.stem}-{source.iso2_languages[0]}.txt"
             document_2_saved_result = step_dir / f"{source.document_path.stem}-{source.iso2_languages[1]}.txt"
-        elif isinstance(source, StepResult):
+        elif isinstance(source, DocumentPairContext):
             document_1_saved_result = step_dir / f"{source.document_1.source.document_path.stem}.txt"
             document_2_saved_result = step_dir / f"{source.document_2.source.document_path.stem}.txt"
         else:

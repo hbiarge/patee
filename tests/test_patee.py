@@ -2,7 +2,7 @@ from pathlib import Path
 
 from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
 from tests.utils.fakes.step_fakes import FakeStepsBuilder
-from tests.utils.mothers.sources import get_monolingual_single_file_pair
+from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair
 
 EXTRACT_ONLY_CONFIG = Path(__file__).parent / "pipeline_samples" / "extract_only.yml"
 FAKES_CONFIG = Path(__file__).parent / "pipeline_samples" / "fakes.yml"
@@ -33,22 +33,22 @@ class TestPatee:
         builder = FakeStepsBuilder()
         patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
-        source = get_monolingual_single_file_pair()
+        source = get_existing_monolingual_single_file_pair()
 
         result = patee.process(source)
 
-        assert result.document_1 is not None
-        assert result.document_2 is not None
+        assert result.context.document_1 is not None
+        assert result.context.document_2 is not None
 
     def test_patee_can_process_with_out_dir(self):
         builder = FakeStepsBuilder()
         patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
 
-        source = get_monolingual_single_file_pair()
+        source = get_existing_monolingual_single_file_pair()
 
         OUT_DIR.mkdir(parents=True, exist_ok=True)
 
         result = patee.process(source, OUT_DIR)
 
-        assert result.document_1 is not None
-        assert result.document_2 is not None
+        assert result.context.document_1 is not None
+        assert result.context.document_2 is not None
