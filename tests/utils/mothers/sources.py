@@ -43,8 +43,8 @@ def get_existing_monolingual_single_file_pair(mode: str = "pdf"):
             )
         )
 
-def get_step_result():
-    context = DocumentPairContext(
+def get_existing_document_pair_context():
+    return DocumentPairContext(
         document_1=DocumentContext(
             source=DocumentSource(
                 document_path=PDF_ES_FILE,
@@ -62,6 +62,9 @@ def get_step_result():
             extra={},
         ),
     )
+
+def get_step_result():
+    context = get_existing_document_pair_context()
     return StepResult(
         context=context,
     )

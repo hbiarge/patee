@@ -6,10 +6,10 @@ class StepMetadata:
     name: str
     type: str
     idx: int
-    config: dict
+    config_hash: int
 
     def __key(self):
-        return self.name, self.type, self.idx, self.config
+        return self.name, self.type, self.idx, self.config_hash
 
     def __hash__(self):
         return hash(self.__key())

@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 from typing import Union, Iterable, cast
@@ -73,7 +74,12 @@ class Patee:
             if not step_config:
                 step_config = {}
 
-            metadata = StepMetadata(type=step_type, name=step_name, idx=step_idx, config=step_config)
+            metadata = StepMetadata(
+                type=step_type,
+                name=step_name,
+                idx=step_idx,
+                config_hash=hash(json.dumps(step_config, sort_keys=True, ensure_ascii=True)),
+            )
             step_instance = instance._steps_builder.build(step_type, step_name, **step_config)
 
             instance._steps.append((step_instance, metadata))

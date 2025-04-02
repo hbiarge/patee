@@ -29,11 +29,21 @@ class FakeStepsBuilder(DefaultStepsBuilder):
 
 
 class FakeExtractor(ParallelExtractStep):
-    def __init__(self, name: str):
+    def __init__(self, name: str, should_stop: bool=False):
         super().__init__(name)
+        self.was_called = False
+        self.should_stop = should_stop
 
     def extract(self, context: StepContext,
                 source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+        self.was_called = True
+        if self.should_stop:
+            return StepResult(
+                context=None,
+                should_stop_pipeline=True,
+                skipped=True
+            )
+
         if isinstance(source, MonolingualSingleFilePair):
             context = DocumentPairContext(
                 document_1=DocumentContext(
@@ -51,6 +61,8 @@ class FakeExtractor(ParallelExtractStep):
             )
             return StepResult(
                 context=context,
+                should_stop_pipeline=False,
+                skipped=False
             )
         elif isinstance(source, MultilingualSingleFile):
             context = DocumentPairContext(
@@ -75,8 +87,10 @@ class FakeExtractor(ParallelExtractStep):
 class FakeProcessor(ParallelProcessStep):
     def __init__(self, name: str):
         super().__init__(name)
+        self.was_called = False
 
     def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+        self.was_called = True
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=source.document_1.source,
