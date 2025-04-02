@@ -19,7 +19,7 @@ class TestTextReaderExtractor:
 
         result = extractor.extract(context, source)
 
-        OUT_DIR.mkdir(exist_ok=True)
+        OUT_DIR.mkdir(parents=True,exist_ok=True)
         result.context.dump_to(OUT_DIR)
 
         assert result.context.document_1.text is not None
