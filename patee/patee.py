@@ -62,13 +62,13 @@ class Patee:
 
             logger.debug("loading step %s at position %s...", step_type, step_idx)
 
-            # TODO: Add step index to folder name
             step_name = step.get("name")
             if not step_name:
                 step_name = step_type
+            step_idx_name = f"{step_idx:02d}_{step_name.lower()}"
 
-            if step_name in unique_step_names:
-                raise ValueError(f"Step names must be unique. Duplicate name found: {step_name}")
+            if step_idx_name in unique_step_names:
+                raise ValueError(f"Step names must be unique. Duplicate name found: {step_idx_name}")
 
             step_config = step.get("config")
             if not step_config:
@@ -76,16 +76,16 @@ class Patee:
 
             metadata = StepMetadata(
                 type=step_type,
-                name=step_name,
+                name=step_idx_name,
                 idx=step_idx,
                 config_hash=hash(json.dumps(step_config, sort_keys=True, ensure_ascii=True)),
             )
-            step_instance = instance._steps_builder.build(step_type, step_name, **step_config)
+            step_instance = instance._steps_builder.build(step_type, step_idx_name, **step_config)
 
             instance._steps.append((step_instance, metadata))
-            unique_step_names.add(step_name)
+            unique_step_names.add(step_idx_name)
 
-            logger.debug("step %s with name %s loaded successfully.", step_type, step_name)
+            logger.debug("step %s with name %s loaded successfully.", step_type, step_idx_name)
 
             step_idx += 1
 
