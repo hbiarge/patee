@@ -1,5 +1,18 @@
 # Patee
 
+![test](https://github.com/hbiarge/patee/actions/workflows/test.yml/badge.svg)
+
+TestPyPI 
+
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/patee?pypiBaseUrl=https%3A%2F%2Ftest.pypi.org)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/patee?pypiBaseUrl=https%3A%2F%2Ftest.pypi.org)
+
+PyPI
+
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/patee)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/:patee)
+
+
 Patee (Parallel Text Extraction and Processing Pipeline) is 
 a Python library designed for processing and extracting text from monolingual 
 or multilingual documents in different languages. 
@@ -9,6 +22,12 @@ content.
 
 The library allows users to extract, align, and process text across 
 language pairs in a structured manner.
+
+Installation:
+
+```bash
+pip install patee
+```
 
 ## How it Works
 
