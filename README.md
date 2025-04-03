@@ -2,7 +2,7 @@
 
 ![test](https://github.com/hbiarge/patee/actions/workflows/test.yml/badge.svg)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/patee)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/:patee)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/patee)
 
 
 Patee (Parallel Text Extraction and Processing Pipeline) is 
