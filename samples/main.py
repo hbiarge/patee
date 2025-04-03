@@ -54,10 +54,10 @@ def create_source():
 def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
     result = pipeline.run(source)
 
-    if result.completed:
+    if result.status == "succeeded":
         print("Pipeline fully executed")
-    else:
-        print("Pipeline not fully executed")
+    elif result.status == "stopped":
+        print(f"Pipeline stopped. Reason: {result.non_succeeded_reason}")
 
 
 if __name__ == '__main__':

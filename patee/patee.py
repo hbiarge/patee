@@ -2,7 +2,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union, Iterable, cast
+from typing import Union, Iterable, cast, FrozenSet
 
 import yaml
 
@@ -22,8 +22,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class RunResult:
+    status: str
     last_step_result: DocumentPairContext
-    completed: bool
+    executed_steps: FrozenSet[str]
+    skipped_steps: FrozenSet[str]
+    non_succeeded_reason: str = None
 
 
 class Patee:
@@ -140,8 +143,11 @@ class Patee:
                 break
 
         return RunResult(
+            status="stopped" if step_result.should_stop_pipeline else "succeeded",
+            non_succeeded_reason="Pipeline stopped by human in the loop step" if step_result.should_stop_pipeline else None,
             last_step_result=step_result.context,
-            completed=not step_result.should_stop_pipeline,
+            executed_steps=frozenset(),
+            skipped_steps=frozenset(),
         )
 
     def _validate_steps_for_process(self):
