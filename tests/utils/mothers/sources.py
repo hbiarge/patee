@@ -3,11 +3,14 @@ from pathlib import Path
 from patee import MonolingualSingleFilePair, MonolingualSingleFile, PageInfo, SingleFile
 from patee.steps import StepResult, DocumentContext, DocumentSource, DocumentPairContext
 
-PDF_ES_FILE = Path(__file__).parent.parent / "data" / "GUIA-PDDD_ES.pdf"
-PDF_CA_FILE = Path(__file__).parent.parent / "data" / "GUIA-PDDD.pdf"
-TXT_ES_FILE = Path(__file__).parent.parent / "data" / "GUIA-PDDD_ES.txt"
-TXT_CA_FILE = Path(__file__).parent.parent / "data" / "GUIA-PDDD.txt"
+SAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "samples"
+PIPELINES_DIR = SAMPLES_DIR / "pipelines"
+SOURCES_DIR = SAMPLES_DIR / "sources"
 
+PDF_ES_FILE = SOURCES_DIR / "GUIA-PDDD_ES.pdf"
+PDF_CA_FILE = SOURCES_DIR / "GUIA-PDDD.pdf"
+TXT_ES_FILE = SOURCES_DIR / "GUIA-PDDD_ES.txt"
+TXT_CA_FILE = SOURCES_DIR / "GUIA-PDDD.txt"
 
 def get_existing_pdf_file():
     return PDF_ES_FILE
@@ -36,7 +39,7 @@ def get_existing_monolingual_single_file_pair(mode: str = "pdf"):
                 document_path=PDF_CA_FILE if id_pdf else TXT_CA_FILE,
                 iso2_language="ca",
             ),
-            shared_page_info=PageInfo(
+            shared_config=PageInfo(
                 start_page=4,
                 end_page=6,
                 pages_to_exclude={5}

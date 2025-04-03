@@ -94,11 +94,11 @@ class DoclingExtractor(ParallelExtractStep):
 
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
         logger.debug("converting document 1 from %s ...", source.document_1.document_path)
-        document_1_result = self._convert_file(source.document_1, source.shared_page_info)
+        document_1_result = self._convert_file(source.document_1, source.shared_config)
         logger.info("document 1 seen labels: %s", [str(label) for label in document_1_result.seen_labels])
 
         logger.debug("converting document 2 from %s ...",  source.document_2.document_path)
-        document_2_result = self._convert_file(source.document_2, source.shared_page_info)
+        document_2_result = self._convert_file(source.document_2, source.shared_config)
         logger.info("document 2 seen labels: %s", [str(label) for label in document_2_result.seen_labels])
 
         context = DocumentPairContext(

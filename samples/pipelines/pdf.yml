@@ -1,0 +1,15 @@
+version: 1.0
+steps:
+  - type: docling_extractor
+    name: parse
+    config:
+      parser: docling # docling | pypdfium
+      labels_to_extract: # section_header | list_item | text
+        - text
+        - list_item
+
+  - type: human_in_the_loop_processor
+    name: human_in_the_loop
+
+  - type: noop_step_processor
+    name: noop

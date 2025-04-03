@@ -5,11 +5,12 @@ from pathlib import Path
 import pytest
 
 from patee import PageInfo, SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
-from tests.utils.mothers.sources import get_existing_single_file, get_existing_monolingual_single_file
-
-# Constants for testing
-TEXT_ES_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD_ES.pdf"
-TEXT_CA_FILE = Path(__file__).parent / "utils" / "data" / "GUIA-PDDD.pdf"
+from tests.utils.mothers.sources import (
+    get_existing_single_file,
+    get_existing_monolingual_single_file,
+    PDF_ES_FILE,
+    PDF_CA_FILE
+)
 
 
 class TestPageInfo:
@@ -64,7 +65,7 @@ class TestSingleFile:
 
         single_file = get_existing_single_file()
         assert isinstance(single_file.document_path, Path)
-        assert single_file.document_path == TEXT_ES_FILE
+        assert single_file.document_path == PDF_ES_FILE
 
     def test_create_with_path_object(self, monkeypatch):
         # Mock Path.exists and Path.is_file to avoid file system dependencies
@@ -72,7 +73,7 @@ class TestSingleFile:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         single_file = get_existing_single_file()
-        assert single_file.document_path == TEXT_ES_FILE
+        assert single_file.document_path == PDF_ES_FILE
 
     def test_file_not_found(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda self: False)
@@ -95,7 +96,7 @@ class TestMonolingualSingleFile:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         mono_file = get_existing_monolingual_single_file()
-        assert mono_file.document_path == TEXT_ES_FILE
+        assert mono_file.document_path == PDF_ES_FILE
         assert mono_file.iso2_language == "es"
         assert mono_file.page_info is None
 
@@ -114,7 +115,7 @@ class TestMonolingualSingleFile:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         with pytest.raises(ValueError, match="iso2_language must be a 2-letter ISO code"):
-            MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="esp")
+            MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="esp")
 
 
 class TestMonolingualSingleFilePair:
@@ -123,19 +124,19 @@ class TestMonolingualSingleFilePair:
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es")
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="ca")
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
         page_info = PageInfo(start_page=5, end_page=10)
 
         pair = MonolingualSingleFilePair(
             document_1=doc1,
             document_2=doc2,
-            shared_page_info=page_info
+            shared_config=page_info
         )
 
         assert pair.document_1 == doc1
         assert pair.document_2 == doc2
-        assert pair.shared_page_info == page_info
+        assert pair.shared_config == page_info
 
     def test_create_valid_with_individual_page_info(self, monkeypatch):
         # Mock Path.exists and Path.is_file to avoid file system dependencies
@@ -145,40 +146,40 @@ class TestMonolingualSingleFilePair:
         page_info1 = PageInfo(start_page=5, end_page=10)
         page_info2 = PageInfo(start_page=6, end_page=12)
 
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es", page_info=page_info1)
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="ca", page_info=page_info2)
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info1)
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca", page_info=page_info2)
 
         pair = MonolingualSingleFilePair(
             document_1=doc1,
             document_2=doc2
         )
 
-        assert pair.shared_page_info is None
+        assert pair.shared_config is None
 
     def test_create_default_shared_page_info(self, monkeypatch):
         # Mock Path.exists and Path.is_file to avoid file system dependencies
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es")
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="ca")
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
 
         pair = MonolingualSingleFilePair(
             document_1=doc1,
             document_2=doc2
         )
 
-        assert pair.shared_page_info is not None
-        assert pair.shared_page_info.start_page == 1
-        assert pair.shared_page_info.end_page == sys.maxsize
+        assert pair.shared_config is not None
+        assert pair.shared_config.start_page == 1
+        assert pair.shared_config.end_page == sys.maxsize
 
     def test_same_language_error(self, monkeypatch):
         # Mock Path.exists and Path.is_file to avoid file system dependencies
         monkeypatch.setattr(Path, "exists", lambda self: True)
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es")
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="es")
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="es")
 
         with pytest.raises(ValueError, match="Documents must have different languages"):
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
@@ -189,8 +190,8 @@ class TestMonolingualSingleFilePair:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es", page_info=page_info)
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="ca")
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
 
         with pytest.raises(ValueError, match="Define page information for both documents or use shared page info"):
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
@@ -201,14 +202,14 @@ class TestMonolingualSingleFilePair:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
-        doc1 = MonolingualSingleFile(document_path=TEXT_ES_FILE, iso2_language="es", page_info=page_info)
-        doc2 = MonolingualSingleFile(document_path=TEXT_CA_FILE, iso2_language="ca")
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
 
         with pytest.raises(ValueError, match="Define page information for both documents or use shared page info"):
             MonolingualSingleFilePair(
                 document_1=doc1,
                 document_2=doc2,
-                shared_page_info=page_info
+                shared_config=page_info
             )
 
 
@@ -219,10 +220,10 @@ class TestMultilingualSingleFile:
         monkeypatch.setattr(Path, "is_file", lambda self: True)
 
         multi_file = MultilingualSingleFile(
-            document_path=TEXT_ES_FILE,
+            document_path=PDF_ES_FILE,
             iso2_languages=["es", "ca"]
         )
-        assert multi_file.document_path == TEXT_ES_FILE
+        assert multi_file.document_path == PDF_ES_FILE
         assert multi_file.iso2_languages == ["es", "ca"]
         assert multi_file.page_info is None
 
@@ -233,7 +234,7 @@ class TestMultilingualSingleFile:
 
         page_info = PageInfo(start_page=5, end_page=10)
         multi_file = MultilingualSingleFile(
-            document_path=TEXT_ES_FILE,
+            document_path=PDF_ES_FILE,
             iso2_languages=["es", "ca"],
             page_info=page_info
         )
@@ -246,7 +247,7 @@ class TestMultilingualSingleFile:
 
         with pytest.raises(ValueError, match=re.escape("iso2_languages must contain only two 2-letter ISO codes, got ['es', 'ca', 'en']")):
             MultilingualSingleFile(
-                document_path=TEXT_ES_FILE,
+                document_path=PDF_ES_FILE,
                 iso2_languages=["es", "ca", "en"]
             )
 
@@ -257,7 +258,7 @@ class TestMultilingualSingleFile:
 
         with pytest.raises(ValueError, match="iso2_languages must contain 2-letter ISO codes"):
             MultilingualSingleFile(
-                document_path=TEXT_ES_FILE,
+                document_path=PDF_ES_FILE,
                 iso2_languages=["es", "cat"]
             )
 
@@ -268,6 +269,6 @@ class TestMultilingualSingleFile:
 
         with pytest.raises(ValueError, match="iso2_languages must contain unique 2-letter ISO codes"):
             MultilingualSingleFile(
-                document_path=TEXT_ES_FILE,
+                document_path=PDF_ES_FILE,
                 iso2_languages=["es", "es"]
             )

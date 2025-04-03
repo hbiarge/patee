@@ -11,7 +11,7 @@ class PageInfo:
     pages_to_exclude: Set[int] = None
 
     def __key(self):
-        return self.start_page, self.end_page, self.pages_to_exclude
+        return self.start_page, self.end_page, frozenset(sorted(self.pages_to_exclude))
 
     def __hash__(self):
         return hash(self.__key())
@@ -99,7 +99,18 @@ class MonolingualSingleFilePair:
 
     document_1: MonolingualSingleFile
     document_2: MonolingualSingleFile
-    shared_page_info: PageInfo = None
+    shared_config: PageInfo = None
+
+    def __key(self):
+        return self.document_1, self.document_2, self.shared_config
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        if isinstance(other, MonolingualSingleFilePair):
+            return self.__key() == other.__key()
+        return NotImplemented
 
     def __post_init__(self):
         # Documents should define different languages
@@ -107,10 +118,10 @@ class MonolingualSingleFilePair:
             raise ValueError("Documents must have different languages")
 
         # Should be just one shared page info or each document must have its own
-        if self.shared_page_info is None:
+        if self.shared_config is None:
             if self.document_1.page_info is None and self.document_2.page_info is None:
                 # If no page info defined, create a new shared one
-                self.shared_page_info = PageInfo()
+                self.shared_config = PageInfo()
             elif self.document_1.page_info is None and self.document_2.page_info is not None:
                 raise ValueError("Define page information for both documents or use shared page info")
             elif self.document_1.page_info is not None and self.document_2.page_info is None:
@@ -119,10 +130,6 @@ class MonolingualSingleFilePair:
             if self.document_1.page_info is not None or self.document_2.page_info is not None:
                 raise ValueError("Define page information for both documents or use shared page info")
 
-    def __hash__(self):
-        return super().__hash__()
-
-
 
 @dataclass
 class MultilingualSingleFile(SingleFile):
@@ -130,6 +137,17 @@ class MultilingualSingleFile(SingleFile):
 
     iso2_languages: List[str]
     page_info: PageInfo = None
+
+    def __key(self):
+        return self.document_path, self.iso2_languages, self.page_info
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        if isinstance(other, MultilingualSingleFile):
+            return self.__key() == other.__key()
+        return NotImplemented
 
     def __post_init__(self):
         super().__post_init__()
@@ -144,6 +162,3 @@ class MultilingualSingleFile(SingleFile):
         unique_languages = set(lang for lang in self.iso2_languages)
         if len(unique_languages) != len(self.iso2_languages):
             raise ValueError("iso2_languages must contain unique 2-letter ISO codes")
-
-    def __hash__(self):
-        return super().__hash__()

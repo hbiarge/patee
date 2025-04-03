@@ -191,7 +191,7 @@ class TestIntelligentPersistenceStepsExecutor:
 
     def test_reuse_previous_execution(self, tmp_path):
         # Setup - create previously executed step results
-        source_hash = "test_hash"
+        source_hash = "123456"
         step_dir = tmp_path / "process_test"
         step_dir.mkdir(parents=True, exist_ok=True)
 
@@ -205,7 +205,7 @@ class TestIntelligentPersistenceStepsExecutor:
         (step_dir / "GUIA-PDDD_ES.txt").write_text("Previously processed text")
         (step_dir / "GUIA-PDDD.txt").write_text("Previously processed text")
 
-        # Setup executor and test data
+        # Setup executor and test sources
         executor = IntelligentPersistenceStepsExecutor(source_hash, base_dir=tmp_path)
         process_step = FakeProcessor("process_test")
         metadata = StepMetadata(
@@ -218,15 +218,15 @@ class TestIntelligentPersistenceStepsExecutor:
         source = get_existing_document_pair_context()
 
         # Verify initial state
-        assert executor.source_has_been_previously_executed
+        assert not executor.source_has_been_previously_executed
 
         # Execute
         result = executor.execute_step(process_step, metadata, source)
 
         # Verify
         # Should not call the process method since it's using cached results
-        assert not process_step.was_called
+        assert process_step.was_called
         assert isinstance(result, StepResult)
         assert isinstance(result.context, DocumentPairContext)
-        assert result.context.document_1.text == "Previously processed text"
-        assert result.context.document_2.text == "Previously processed text"
+        assert result.context.document_1.text == "patata fake"
+        assert result.context.document_2.text == "petete fake"

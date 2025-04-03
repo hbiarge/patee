@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Union, Iterable, cast
 
@@ -14,9 +15,16 @@ from patee import (
     DefaultStepsBuilder,
     StepMetadata,
 )
-from patee.steps import ParallelExtractStep, ParallelProcessStep, StepResult
+from patee.steps import ParallelExtractStep, ParallelProcessStep, StepResult, DocumentPairContext
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RunResult:
+    last_step_result: DocumentPairContext
+    completed: bool
+
 
 class Patee:
     """Main pipeline class to coordinate the processing steps."""
@@ -97,7 +105,8 @@ class Patee:
         """Remove a step from the pipeline by name."""
         self._steps = [(step, metadata) for step, metadata in self._steps if step.name != step_name]
 
-    def process(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile], out_dir: Union[Path, None] = None) -> StepResult:
+    def run(self, source: Union[MonolingualSingleFilePair, MultilingualSingleFile],
+            out_dir: Union[Path, None] = None) -> RunResult:
         """Process source through the complete pipeline."""
 
         # Validate state of the pipeline is correct to start processing the source
@@ -118,6 +127,7 @@ class Patee:
             logger.debug(" output directory provided: %s. Creating a PersistentStepsExecutor steps executor.", out_dir)
             executor = PersistentStepsExecutor(base_dir=out_dir)
 
+
         extract_step, extract_metadata = self._steps[0]
         extract_result = executor.execute_step(cast(ParallelExtractStep ,extract_step), extract_metadata, source)
 
@@ -129,7 +139,10 @@ class Patee:
                 logger.warning("pipeline stopped at step %s with name %s.", metadata.type, metadata.name)
                 break
 
-        return step_result
+        return RunResult(
+            last_step_result=step_result.context,
+            completed=not step_result.should_stop_pipeline,
+        )
 
     def _validate_steps_for_process(self):
         """Validate the steps in the pipeline."""
