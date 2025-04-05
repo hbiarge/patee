@@ -9,19 +9,19 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import NodeItem, DocItemLabel
 
-from patee import (
+from patee.input_types import (
+    MonolingualSingleFile,
     MonolingualSingleFilePair,
     MultilingualSingleFile,
     PageInfo,
-    MonolingualSingleFile,
 )
-from patee.steps import (
+from patee.step_types import (
     ParallelExtractStep,
-    DocumentPairContext,
     StepResult,
     DocumentContext,
     DocumentSource,
     StepContext,
+    DocumentPairContext,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 
-from patee.steps import Step, DoclingExtractor, NoopProcessorStep, TextReaderExtractor, HumanInTheLoopProcessorStep
+from .step_types import Step
+from .steps.text_reader_extractor_step import TextReaderExtractor
+from .steps.docling_extractor_step import DoclingExtractor
+from .steps.human_in_the_loop_processor_step import HumanInTheLoopProcessorStep
+from .steps.noop_processor_step import NoopProcessorStep
 
 
 class StepsBuilder(ABC):

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from patee import MonolingualSingleFilePair, MonolingualSingleFile, PageInfo, SingleFile
-from patee.steps import StepResult, DocumentContext, DocumentSource, DocumentPairContext
+from patee.input_types import SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, PageInfo
+from patee.step_types import StepResult, DocumentSource, DocumentContext, DocumentPairContext
 
 SAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "samples"
 PIPELINES_DIR = SAMPLES_DIR / "pipelines"

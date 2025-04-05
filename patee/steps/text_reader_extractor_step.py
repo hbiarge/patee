@@ -2,8 +2,14 @@ import logging
 from typing import Union
 
 from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
-from patee.steps import ParallelExtractStep, StepResult, DocumentContext, DocumentSource, StepContext, \
-    DocumentPairContext
+from patee.step_types import (
+    ParallelExtractStep,
+    StepResult,
+    DocumentContext,
+    DocumentSource,
+    StepContext,
+    DocumentPairContext,
+)
 
 
 logger = logging.getLogger(__name__)

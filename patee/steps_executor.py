@@ -3,16 +3,18 @@ from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import Union
 
-from patee import MonolingualSingleFilePair, MultilingualSingleFile, StepMetadata
-from patee.steps import (
-    StepContext,
+from .core_types import PipelineContext, RunContext
+from .step_types import (
     ParallelExtractStep,
-    StepResult,
     ParallelProcessStep,
-    DocumentContext,
-    DocumentSource,
+    StepContext,
+    StepMetadata,
     DocumentPairContext,
+    StepResult,
+    DocumentSource,
+    DocumentContext,
 )
+from .input_types import MonolingualSingleFilePair, MultilingualSingleFile
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +27,19 @@ class StepsExecutor(ABC):
 
 
 class NonPersistentStepsExecutor(StepsExecutor):
+    def __init__(self, pipeline_context: PipelineContext, run_context: RunContext):
+        self._pipeline_context = pipeline_context
+        self._run_context = run_context
+
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
                      source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
         logger.info("start executing %s step in non persistent mode...", step.name)
 
-        context = StepContext(step_dir=None)
+        context = StepContext(
+            pipeline_context=self._pipeline_context,
+            run_context=self._run_context,
+            step_dir=None
+        )
 
         if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
             result = step.extract(context, source)
@@ -43,17 +53,22 @@ class NonPersistentStepsExecutor(StepsExecutor):
 
 
 class PersistentStepsExecutor(StepsExecutor):
-    def __init__(self, base_dir: Path):
-        self._base_dir: Path = base_dir
+    def __init__(self, pipeline_context: PipelineContext, run_context: RunContext):
+        self._pipeline_context = pipeline_context
+        self._run_context = run_context
 
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
                      source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
-        step_dir = self._base_dir / step.name
+        step_dir = self._run_context.output_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("start executing %s step in persistent mode...", step.name)
 
-        context = StepContext(step_dir=step_dir)
+        context = StepContext(
+            pipeline_context=self._pipeline_context,
+            run_context=self._run_context,
+            step_dir=step_dir
+        )
 
         if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
             result = step.extract(context, source)
@@ -71,21 +86,20 @@ class PersistentStepsExecutor(StepsExecutor):
 
 
 class IntelligentPersistenceStepsExecutor(StepsExecutor):
-    def __init__(self, source_hash: str, base_dir:Path):
+    def __init__(self,  pipeline_context: PipelineContext, run_context: RunContext):
+        self._pipeline_context = pipeline_context
+        self._run_context = run_context
         self.source_has_been_previously_executed = False
 
-        self._source_hash = source_hash
-        self._base_dir: Path = base_dir
-
-        main_marker_file = self._base_dir / ".patee"
-        self._validate_directory(base_dir, main_marker_file, source_hash)
+        main_marker_file = self._run_context.output_dir / ".patee"
+        self._validate_directory(self._run_context.output_dir, main_marker_file, self._run_context.source_hash)
 
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
                      source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
-        step_dir = self._base_dir / step.name
+        step_dir = self._run_context.output_dir / step.name
         step_dir.mkdir(parents=True, exist_ok=True)
         step_marker_file = step_dir / ".patee"
-        source_step_hash = f"{self._source_hash}--{hash(metadata)}"
+        source_step_hash = f"{self._run_context.source_hash}--{hash(metadata)}"
 
         has_been_executed, open_mode = self._has_been_executed(step_marker_file, source_step_hash)
 
@@ -100,7 +114,11 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
         else:
             logger.info("start executing %s step in persistent mode...", step.name)
 
-            context = StepContext(step_dir=step_dir)
+            context = StepContext(
+                pipeline_context=self._pipeline_context,
+                run_context=self._run_context,
+                step_dir=step_dir,
+            )
 
             if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
                 result = step.extract(context, source)

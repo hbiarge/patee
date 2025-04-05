@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from patee import MultilingualSingleFile, MonolingualSingleFile
-from patee.steps import (
+from patee.input_types import MultilingualSingleFile, MonolingualSingleFile
+from patee.step_types import (
     StepContext,
     Step,
     DocumentSource,
@@ -15,16 +15,31 @@ from patee.steps import (
     ParallelProcessStep,
 )
 from tests.utils.mothers.sources import get_existing_pdf_file
+from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
 
 
 class TestStepContext:
     def test_initialization_without_dir(self):
-        step_context = StepContext(step_dir=None)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=None)
+        step_context = StepContext(
+            pipeline_context=pipeline_context,
+            run_context=run_context,
+            step_dir=None,
+        )
+
         assert step_context.step_dir is None
 
     def test_initialization_with_dir(self):
         step_dir = Path("/path/to/step")
-        step_context = StepContext(step_dir=step_dir)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=step_dir)
+        step_context = StepContext(
+            pipeline_context=pipeline_context,
+            run_context=run_context,
+            step_dir=step_dir,
+        )
+
         assert step_context.step_dir == step_dir
 
 

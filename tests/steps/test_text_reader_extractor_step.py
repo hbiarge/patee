@@ -1,7 +1,9 @@
 from pathlib import Path
 
-from patee.steps import TextReaderExtractor, StepContext
+from patee.step_types import StepContext
+from patee.steps.text_reader_extractor_step import TextReaderExtractor
 from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair
+from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
 
 OUT_DIR = Path(__file__).parent / "out" / "text_reader_extractor"
 
@@ -13,9 +15,15 @@ class TestTextReaderExtractor:
 
     def test_text_reader_extractor_can_process(self):
         extractor = TextReaderExtractor("text_reader_extractor")
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=None)
 
         source = get_existing_monolingual_single_file_pair(mode="txt")
-        context = StepContext(step_dir=None)
+        context = StepContext(
+            pipeline_context=pipeline_context,
+            run_context=run_context,
+            step_dir=None,
+        )
 
         result = extractor.extract(context, source)
 

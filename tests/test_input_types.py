@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from patee import PageInfo, SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
+from patee.input_types import (
+    PageInfo,
+    SingleFile,
+    MonolingualSingleFile,
+    MonolingualSingleFilePair,
+    MultilingualSingleFile,
+)
 from tests.utils.mothers.sources import (
     get_existing_single_file,
     get_existing_monolingual_single_file,

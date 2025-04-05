@@ -1,13 +1,7 @@
-from pathlib import Path
-
-import pytest
-
-from patee import MonolingualSingleFilePair, MultilingualSingleFile, StepMetadata, MonolingualSingleFile
-from patee.steps import (
+from patee.step_types import (
     StepResult,
-    DocumentContext,
-    DocumentSource,
     DocumentPairContext,
+    StepMetadata,
 )
 from patee.steps_executor import (
     NonPersistentStepsExecutor,
@@ -16,12 +10,15 @@ from patee.steps_executor import (
 )
 from tests.utils.fakes.step_fakes import FakeExtractor, FakeProcessor
 from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair, get_existing_document_pair_context
+from utils.mothers.contexts import get_pipeline_context, get_run_context
 
 
 class TestNonPersistentStepsExecutor:
     def test_extract_step_execution(self):
         # Setup
-        executor = NonPersistentStepsExecutor()
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=None)
+        executor = NonPersistentStepsExecutor(pipeline_context, run_context)
         extract_step = FakeExtractor("extract_test")
         metadata = StepMetadata(
             name="extract_test",
@@ -45,7 +42,9 @@ class TestNonPersistentStepsExecutor:
 
     def test_process_step_execution(self):
         # Setup
-        executor = NonPersistentStepsExecutor()
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=None)
+        executor = NonPersistentStepsExecutor(pipeline_context, run_context)
         process_step = FakeProcessor("process_test")
         metadata = StepMetadata(
             name="extract_test",
@@ -71,7 +70,9 @@ class TestNonPersistentStepsExecutor:
 class TestPersistentStepsExecutor:
     def test_extract_step_execution(self, tmp_path):
         # Setup
-        executor = PersistentStepsExecutor(base_dir=tmp_path)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=tmp_path)
+        executor = PersistentStepsExecutor(pipeline_context, run_context)
         extract_step = FakeExtractor("extract_test")
         metadata = StepMetadata(
             name="extract_test",
@@ -101,7 +102,9 @@ class TestPersistentStepsExecutor:
 
     def test_process_step_execution(self, tmp_path):
         # Setup
-        executor = PersistentStepsExecutor(base_dir=tmp_path)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=tmp_path)
+        executor = PersistentStepsExecutor(pipeline_context, run_context)
         process_step = FakeProcessor("process_test")
         metadata = StepMetadata(
             name="extract_test",
@@ -132,7 +135,9 @@ class TestPersistentStepsExecutor:
 
     def test_stop_pipeline_no_files_written(self, tmp_path):
         # Setup
-        executor = PersistentStepsExecutor(base_dir=tmp_path)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=tmp_path)
+        executor = PersistentStepsExecutor(pipeline_context, run_context)
         extract_step = FakeExtractor("extract_test", should_stop=True)
         metadata = StepMetadata(
             name="extract_test",
@@ -161,8 +166,9 @@ class TestPersistentStepsExecutor:
 class TestIntelligentPersistenceStepsExecutor:
     def test_new_source_execution(self, tmp_path):
         # Setup
-        source_hash = "test_hash"
-        executor = IntelligentPersistenceStepsExecutor(source_hash, base_dir=tmp_path)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=tmp_path, source_hash="test_hash")
+        executor = IntelligentPersistenceStepsExecutor(pipeline_context, run_context)
         extract_step = FakeExtractor("extract_test")
         metadata = StepMetadata(
             name="extract_test",
@@ -206,7 +212,9 @@ class TestIntelligentPersistenceStepsExecutor:
         (step_dir / "GUIA-PDDD.txt").write_text("Previously processed text")
 
         # Setup executor and test sources
-        executor = IntelligentPersistenceStepsExecutor(source_hash, base_dir=tmp_path)
+        pipeline_context = get_pipeline_context()
+        run_context = get_run_context(output_dir=tmp_path, source_hash=source_hash)
+        executor = IntelligentPersistenceStepsExecutor(pipeline_context, run_context)
         process_step = FakeProcessor("process_test")
         metadata = StepMetadata(
             name="extract_test",

@@ -1,15 +1,17 @@
 from typing import Union
 
-from patee import MonolingualSingleFilePair, MultilingualSingleFile, DefaultStepsBuilder
-from patee.steps import (
+from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from patee.step_types import (
     ParallelExtractStep,
     StepResult,
     Step,
     DocumentSource,
     StepContext,
     ParallelProcessStep,
-    DocumentContext, DocumentPairContext,
+    DocumentContext,
+    DocumentPairContext,
 )
+from patee.steps_builder import DefaultStepsBuilder
 
 
 class FakeStepsBuilder(DefaultStepsBuilder):

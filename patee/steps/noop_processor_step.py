@@ -1,6 +1,12 @@
 import logging
 
-from patee.steps import ParallelProcessStep, StepResult, DocumentContext, StepContext, DocumentPairContext
+from patee.step_types import (
+    ParallelProcessStep,
+    StepResult,
+    DocumentContext,
+    StepContext,
+    DocumentPairContext,
+)
 
 
 logger = logging.getLogger(__name__)

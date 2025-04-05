@@ -6,16 +6,16 @@ from typing import Union, Iterable, cast, FrozenSet
 
 import yaml
 
-from patee import (
-    MultilingualSingleFile,
-    MonolingualSingleFilePair,
-    NonPersistentStepsExecutor,
-    PersistentStepsExecutor,
-    StepsBuilder,
-    DefaultStepsBuilder,
+from .core_types import PipelineContext, RunContext
+from .input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from .step_types import (
+    ParallelExtractStep,
+    ParallelProcessStep,
     StepMetadata,
+    DocumentPairContext,
 )
-from patee.steps import ParallelExtractStep, ParallelProcessStep, StepResult, DocumentPairContext
+from .steps_builder import StepsBuilder, DefaultStepsBuilder
+from .steps_executor import NonPersistentStepsExecutor, PersistentStepsExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,9 @@ class RunResult:
 class Patee:
     """Main pipeline class to coordinate the processing steps."""
 
-    def __init__(self, steps_builder: StepsBuilder = None):
-        """Initialize the pipeline with processing steps."""
-        if steps_builder is None:
-            self._steps_builder = DefaultStepsBuilder()
-        else:
-            self._steps_builder = steps_builder
+    def __init__(self, context: PipelineContext, steps_builder: StepsBuilder):
+        self._context = context
+        self._steps_builder = steps_builder
         self._steps = []
 
     @property
@@ -52,6 +49,8 @@ class Patee:
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
 
+        pipeline_context = PipelineContext(config_path=config_path)
+
         logger.debug("reading configuration file from %s ...", config_path)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
@@ -62,7 +61,7 @@ class Patee:
             logger.debug("using provided steps builder: %s", steps_builder.__class__.__name__)
             steps_builder = steps_builder
 
-        instance = cls(steps_builder)
+        instance = cls(pipeline_context, steps_builder)
 
         step_idx = 0
         unique_step_names = set()
@@ -115,20 +114,25 @@ class Patee:
         # Validate state of the pipeline is correct to start processing the source
         self._validate_steps_for_process()
 
-        source_hash = hash(source)
+        source_hash = str(hash(source))
+
+        run_context = RunContext(
+            source_hash=source_hash,
+            output_dir=out_dir,
+        )
 
         logger.info("start processing source with hash %s ...", source_hash)
 
         if out_dir is None:
             logger.debug("no output directory provided. creating a NonPersistentStepsExecutor steps executor.")
-            executor = NonPersistentStepsExecutor()
+            executor = NonPersistentStepsExecutor(self._context, run_context)
         else:
             # Validate the directory exists
             if not out_dir.exists():
                 raise FileNotFoundError(f"Output directory {out_dir} does not exist.")
 
             logger.debug(" output directory provided: %s. Creating a PersistentStepsExecutor steps executor.", out_dir)
-            executor = PersistentStepsExecutor(base_dir=out_dir)
+            executor = PersistentStepsExecutor(self._context, run_context)
 
 
         extract_step, extract_metadata = self._steps[0]

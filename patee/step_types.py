@@ -4,12 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
-from patee import MonolingualSingleFilePair, MultilingualSingleFile, MonolingualSingleFile
-
-
-@dataclass(frozen=True)
-class StepContext:
-    step_dir: Union[Path, None]
+from .core_types import StepContext
+from .input_types import MonolingualSingleFile, MultilingualSingleFile, MonolingualSingleFilePair
 
 
 @dataclass(frozen=True)
@@ -118,5 +114,20 @@ class ParallelProcessStep(Step):
                 source: DocumentPairContext) -> StepResult:
         pass
 
+@dataclass(frozen=True)
+class StepMetadata:
+    name: str
+    type: str
+    idx: int
+    config_hash: int
 
+    def __key(self):
+        return self.name, self.type, self.idx, self.config_hash
 
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        if isinstance(other, StepMetadata):
+            return self.__key() == other.__key()
+        return NotImplemented

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from patee import Patee
+from patee.patee import Patee
 from tests.utils.fakes.step_fakes import FakeStepsBuilder
 from tests.utils.mothers.sources import (
     get_existing_monolingual_single_file_pair,
