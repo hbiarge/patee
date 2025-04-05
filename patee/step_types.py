@@ -8,6 +8,9 @@ from .core_types import StepContext
 from .input_types import MonolingualSingleFile, MultilingualSingleFile, MonolingualSingleFilePair
 
 
+TEXT_BLOCK_SEPARATOR = "\n\n---- patee_block_separator ------------------------------- \n\n"
+
+
 @dataclass(frozen=True)
 class DocumentSource:
     document_path: Path
@@ -21,30 +24,33 @@ class DocumentSource:
     def from_multilingual_file(file: MultilingualSingleFile, language_idx: int) -> 'DocumentSource':
         return DocumentSource(file.document_path, file.iso2_languages[language_idx])
 
+    def create_context_executed_step(self, current_dir: Path) -> "DocumentContext":
+        return DocumentContext.load_from(self, current_dir)
+
 
 @dataclass(frozen=True)
 class DocumentContext:
     source: DocumentSource
-    text: str
+    text_blocks: list[str]
     extra: dict
 
     def dump_to(self, result_dir: Path):
         file_path = result_dir / f"{self.source.document_path.stem}.txt"
-        file_path.write_text(self.text)
+        file_path.write_text(TEXT_BLOCK_SEPARATOR.join(self.text_blocks))
 
         if len(self.extra) > 0:
             extra_path = result_dir / f"{self.source.document_path.stem}_extra.json"
             extra_path.write_text(json.dumps(self.extra, ensure_ascii=False, indent=2), encoding="utf-8")
 
     @staticmethod
-    def load_from(original_context: "DocumentContext", current_dir: Path) -> "DocumentContext":
+    def load_from(original_source: "DocumentSource", current_dir: Path) -> "DocumentContext":
         if not current_dir.is_dir():
             raise ValueError(f"out_dit path {current_dir} is not a directory")
 
-        text = (current_dir / f"{original_context.source.document_path.stem}.txt").read_text()
+        text = (current_dir / f"{original_source.document_path.stem}.txt").read_text()
         extra = {}
 
-        return DocumentContext(original_context.source, text, extra)
+        return DocumentContext(original_source, text.split(TEXT_BLOCK_SEPARATOR), extra)
 
 
 @dataclass(frozen=True)
@@ -64,8 +70,8 @@ class DocumentPairContext:
         if not current_dir.is_dir():
             raise ValueError(f"out_dit path {current_dir} is not a directory")
 
-        document_1 = DocumentContext.load_from(original_context.document_1, current_dir)
-        document_2 = DocumentContext.load_from(original_context.document_2, current_dir)
+        document_1 = DocumentContext.load_from(original_context.document_1.source, current_dir)
+        document_2 = DocumentContext.load_from(original_context.document_2.source, current_dir)
 
         return DocumentPairContext(document_1, document_2)
 

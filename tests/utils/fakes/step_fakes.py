@@ -51,13 +51,13 @@ class FakeExtractor(ParallelExtractStep):
                 document_1=DocumentContext(
                     source=DocumentSource(document_path=source.document_1.document_path,
                                           iso2_language=source.document_1.iso2_language),
-                    text="fake text 1",
+                    text_blocks=["fake text 1"],
                     extra={},
                 ),
                 document_2=DocumentContext(
                     source=DocumentSource(document_path=source.document_2.document_path,
                                           iso2_language=source.document_2.iso2_language),
-                    text="fake text 2",
+                    text_blocks=["fake text 2"],
                     extra={},
                 ),
             )
@@ -70,12 +70,12 @@ class FakeExtractor(ParallelExtractStep):
             context = DocumentPairContext(
                 document_1=DocumentContext(
                     source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
-                    text="fake text 1",
+                    text_blocks=["fake text 1"],
                     extra={},
                 ),
                 document_2=DocumentContext(
                     source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
-                    text="fake text 2",
+                    text_blocks=["fake text 2"],
                     extra={},
                 ),
             )
@@ -96,12 +96,12 @@ class FakeProcessor(ParallelProcessStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=source.document_1.source,
-                text=source.document_1.text + " fake",
+                text_blocks=[text + " fake" for text in source.document_1.text_blocks],
                 extra={},
             ),
             document_2=DocumentContext(
                 source=source.document_2.source,
-                text=source.document_2.text + " fake",
+                text_blocks=[text + " fake" for text in source.document_2.text_blocks],
                 extra={},
             ),
         )

@@ -13,6 +13,7 @@ from patee.step_types import (
     StepResult,
     ParallelExtractStep,
     ParallelProcessStep,
+    TEXT_BLOCK_SEPARATOR
 )
 from tests.utils.mothers.sources import get_existing_pdf_file
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
@@ -83,26 +84,27 @@ class TestDocumentSource:
 class TestDocumentContext:
     def test_initialization(self):
         source = DocumentSource(Path("/path/to/file.pdf"), "en")
-        text = "Sample text content"
+        text_blocks = ["Sample text content", "Another block of text"]
         extra = {"metadata": "test metadata"}
 
-        doc_context = DocumentContext(source, text, extra)
+        doc_context = DocumentContext(source, text_blocks, extra)
+
         assert doc_context.source == source
-        assert doc_context.text == text
+        assert doc_context.text_blocks == text_blocks
         assert doc_context.extra == extra
 
     def test_dump_to(self, tmp_path):
         source = DocumentSource(Path("document.pdf"), "en")
-        text = "Sample text content"
+        text_blocks = ["Sample text content", "Another block of text"]
         extra = {"metadata": "test metadata"}
 
-        doc_context = DocumentContext(source, text, extra)
+        doc_context = DocumentContext(source, text_blocks, extra)
         doc_context.dump_to(tmp_path)
 
         # Check text file was created with correct content
         text_path = tmp_path / "document.txt"
         assert text_path.exists()
-        assert text_path.read_text() == text
+        assert text_path.read_text().split(TEXT_BLOCK_SEPARATOR) == text_blocks
 
         # Check extra file was created with correct content
         extra_path = tmp_path / "document_extra.json"
@@ -111,10 +113,10 @@ class TestDocumentContext:
 
     def test_dump_to_no_extra(self, tmp_path):
         source = DocumentSource(Path("document.pdf"), "en")
-        text = "Sample text content"
+        text_blocks = ["Sample text content", "Another block of text"]
         extra = {}  # Empty extra
 
-        doc_context = DocumentContext(source, text, extra)
+        doc_context = DocumentContext(source, text_blocks, extra)
         doc_context.dump_to(tmp_path)
 
         # Check text file was created
@@ -127,31 +129,26 @@ class TestDocumentContext:
 
     def test_load_from(self, tmp_path):
         # Create original context
-        source = DocumentSource(Path("document.pdf"), "en")
-        original_text = "Original text"
-        original_extra = {"metadata": "original"}
-
-        original_context = DocumentContext(source, original_text, original_extra)
+        original_source = DocumentSource(Path("document.pdf"), "en")
+        original_text_blocks = ["Original text", "Another original block"]
 
         # Write text file with new content
         text_file = tmp_path / "document.txt"
-        new_text = "New loaded text"
-        text_file.write_text(new_text)
+        text_file.write_text(TEXT_BLOCK_SEPARATOR.join(original_text_blocks))
 
         # Load from the directory
-        loaded_context = DocumentContext.load_from(original_context, tmp_path)
+        loaded_context = DocumentContext.load_from(original_source, tmp_path)
 
         # Check loaded content
-        assert loaded_context.source == original_context.source
-        assert loaded_context.text == new_text
+        assert loaded_context.source == original_source
+        assert loaded_context.text_blocks == original_text_blocks
         assert loaded_context.extra == {}  # Should be empty since no extra file
 
     def test_load_from_invalid_dir(self):
-        source = DocumentSource(Path("document.pdf"), "en")
-        original_context = DocumentContext(source, "text", {})
+        original_source = DocumentSource(Path("document.pdf"), "en")
 
         with pytest.raises(ValueError, match="is not a directory"):
-            DocumentContext.load_from(original_context, Path("/non/existent/path"))
+            DocumentContext.load_from(original_source, Path("/non/existent/path"))
 
 
 class TestDocumentPairContext:
@@ -159,8 +156,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "English text", {"lang": "en"})
-        doc2 = DocumentContext(source2, "Spanish text", {"lang": "es"})
+        doc1 = DocumentContext(source1, ["English text"], {"lang": "en"})
+        doc2 = DocumentContext(source2, ["Spanish text"], {"lang": "es"})
 
         pair = DocumentPairContext(doc1, doc2)
         assert pair.document_1 == doc1
@@ -170,8 +167,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "English text", {"lang": "en"})
-        doc2 = DocumentContext(source2, "Spanish text", {"lang": "es"})
+        doc1 = DocumentContext(source1, ["English text"], {"lang": "en"})
+        doc2 = DocumentContext(source2, ["Spanish text"], {"lang": "es"})
 
         pair = DocumentPairContext(doc1, doc2)
         pair.dump_to(tmp_path)
@@ -186,8 +183,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "English text", {})
-        doc2 = DocumentContext(source2, "Spanish text", {})
+        doc1 = DocumentContext(source1, ["English text"], {})
+        doc2 = DocumentContext(source2, ["Spanish text"], {})
 
         pair = DocumentPairContext(doc1, doc2)
 
@@ -199,8 +196,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "Original English", {"lang": "en"})
-        doc2 = DocumentContext(source2, "Original Spanish", {"lang": "es"})
+        doc1 = DocumentContext(source1, ["Original English"], {"lang": "en"})
+        doc2 = DocumentContext(source2, ["Original Spanish"], {"lang": "es"})
 
         original_pair = DocumentPairContext(doc1, doc2)
 
@@ -214,8 +211,8 @@ class TestDocumentPairContext:
         # Check loaded content
         assert loaded_pair.document_1.source == doc1.source
         assert loaded_pair.document_2.source == doc2.source
-        assert loaded_pair.document_1.text == "New English text"
-        assert loaded_pair.document_2.text == "New Spanish text"
+        assert loaded_pair.document_1.text_blocks == ["New English text"]
+        assert loaded_pair.document_2.text_blocks == ["New Spanish text"]
         assert loaded_pair.document_1.extra == {}
         assert loaded_pair.document_2.extra == {}
 
@@ -223,8 +220,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "English text", {})
-        doc2 = DocumentContext(source2, "Spanish text", {})
+        doc1 = DocumentContext(source1, ["English text"], {})
+        doc2 = DocumentContext(source2, ["Spanish text"], {})
 
         pair = DocumentPairContext(doc1, doc2)
 
@@ -237,8 +234,8 @@ class TestStepResult:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, "English text", {})
-        doc2 = DocumentContext(source2, "Spanish text", {})
+        doc1 = DocumentContext(source1, ["English text"], {})
+        doc2 = DocumentContext(source2, ["Spanish text"], {})
 
         pair = DocumentPairContext(doc1, doc2)
         result = StepResult(pair, False)

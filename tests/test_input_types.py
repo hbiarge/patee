@@ -12,7 +12,6 @@ from patee.input_types import (
     MultilingualSingleFile,
 )
 from tests.utils.mothers.sources import (
-    get_existing_single_file,
     get_existing_monolingual_single_file,
     PDF_ES_FILE,
     PDF_CA_FILE
@@ -65,31 +64,31 @@ class TestPageInfo:
 
 class TestSingleFile:
     def test_create_with_string_path(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        single_file = get_existing_single_file()
+        single_file = SingleFile("path/to/file")
+
         assert isinstance(single_file.document_path, Path)
-        assert single_file.document_path == PDF_ES_FILE
+        assert single_file.document_path == Path("path/to/file")
 
     def test_create_with_path_object(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        single_file = get_existing_single_file()
-        assert single_file.document_path == PDF_ES_FILE
+        single_file = SingleFile(Path("path/to/file"))
+
+        assert single_file.document_path == Path("path/to/file")
 
     def test_file_not_found(self, monkeypatch):
-        monkeypatch.setattr(Path, "exists", lambda self: False)
+        monkeypatch.setattr(Path, "exists", lambda x: False)
 
         with pytest.raises(ValueError, match="Document path not found"):
             SingleFile(document_path="nonexistent.pdf")
 
     def test_path_not_a_file(self, monkeypatch):
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: False)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: False)
 
         with pytest.raises(ValueError, match="Document path is not a file"):
             SingleFile(document_path="directory/")
@@ -97,28 +96,28 @@ class TestSingleFile:
 
 class TestMonolingualSingleFile:
     def test_create_valid(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         mono_file = get_existing_monolingual_single_file()
+
         assert mono_file.document_path == PDF_ES_FILE
         assert mono_file.iso2_language == "es"
         assert mono_file.page_info is None
 
     def test_create_with_page_info(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
+
         mono_file = get_existing_monolingual_single_file(page_info=page_info)
+
         assert mono_file.page_info == page_info
 
     def test_invalid_language_code(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         with pytest.raises(ValueError, match="iso2_language must be a 2-letter ISO code"):
             MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="esp")
@@ -126,9 +125,8 @@ class TestMonolingualSingleFile:
 
 class TestMonolingualSingleFilePair:
     def test_create_valid_with_shared_page_info(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
@@ -145,9 +143,8 @@ class TestMonolingualSingleFilePair:
         assert pair.shared_config == page_info
 
     def test_create_valid_with_individual_page_info(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         page_info1 = PageInfo(start_page=5, end_page=10)
         page_info2 = PageInfo(start_page=6, end_page=12)
@@ -163,9 +160,8 @@ class TestMonolingualSingleFilePair:
         assert pair.shared_config is None
 
     def test_create_default_shared_page_info(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
@@ -180,9 +176,8 @@ class TestMonolingualSingleFilePair:
         assert pair.shared_config.end_page == sys.maxsize
 
     def test_same_language_error(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="es")
@@ -191,9 +186,8 @@ class TestMonolingualSingleFilePair:
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
 
     def test_mixed_page_info_error_one_missing(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
@@ -203,9 +197,8 @@ class TestMonolingualSingleFilePair:
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
 
     def test_mixed_page_info_error_with_shared(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
@@ -221,9 +214,8 @@ class TestMonolingualSingleFilePair:
 
 class TestMultilingualSingleFile:
     def test_create_valid(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         multi_file = MultilingualSingleFile(
             document_path=PDF_ES_FILE,
@@ -234,9 +226,8 @@ class TestMultilingualSingleFile:
         assert multi_file.page_info is None
 
     def test_create_with_page_info(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         page_info = PageInfo(start_page=5, end_page=10)
         multi_file = MultilingualSingleFile(
@@ -247,9 +238,8 @@ class TestMultilingualSingleFile:
         assert multi_file.page_info == page_info
 
     def test_invalid_language_code_number(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         with pytest.raises(ValueError, match=re.escape("iso2_languages must contain only two 2-letter ISO codes, got ['es', 'ca', 'en']")):
             MultilingualSingleFile(
@@ -258,9 +248,8 @@ class TestMultilingualSingleFile:
             )
 
     def test_invalid_language_code(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         with pytest.raises(ValueError, match="iso2_languages must contain 2-letter ISO codes"):
             MultilingualSingleFile(
@@ -269,9 +258,8 @@ class TestMultilingualSingleFile:
             )
 
     def test_duplicate_language_codes(self, monkeypatch):
-        # Mock Path.exists and Path.is_file to avoid file system dependencies
-        monkeypatch.setattr(Path, "exists", lambda self: True)
-        monkeypatch.setattr(Path, "is_file", lambda self: True)
+        monkeypatch.setattr(Path, "exists", lambda x: True)
+        monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         with pytest.raises(ValueError, match="iso2_languages must contain unique 2-letter ISO codes"):
             MultilingualSingleFile(

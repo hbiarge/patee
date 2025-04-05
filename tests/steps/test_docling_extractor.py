@@ -60,5 +60,5 @@ class TestDoclingExtractor:
         OUT_DIR.mkdir(parents=True,exist_ok=True)
         result.context.dump_to(OUT_DIR)
 
-        assert result.context.document_1.text is not None
-        assert result.context.document_2.text is not None
+        assert result.context.document_1.text_blocks is not None
+        assert result.context.document_2.text_blocks is not None

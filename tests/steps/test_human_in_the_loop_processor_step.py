@@ -2,8 +2,8 @@ from pathlib import Path
 
 from patee.step_types import StepContext
 from patee.steps.human_in_the_loop_processor_step import HumanInTheLoopProcessorStep, STOP_STRING, CONTINUE_STRING
-from tests.utils.mothers.sources import get_step_result
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
+from tests.utils.mothers.sources import get_step_result, get_default_text_blocks
 
 OUT_DIR = Path(__file__).parent / "out" / "human_in_the_loop_processor_step"
 
@@ -28,10 +28,11 @@ class TestHumanInTheLoopProcessorStep:
 
         result = extractor.process(context, step_result.context)
 
+        default_text_blocks = get_default_text_blocks()
         assert result.skipped == True
         assert result.should_stop_pipeline == False
-        assert result.context.document_1.text == "patata"
-        assert result.context.document_2.text == "petete"
+        assert result.context.document_1.text_blocks == default_text_blocks
+        assert result.context.document_2.text_blocks == default_text_blocks
 
     def test_can_process_stops_new_if_step_dir_contex_is_not_none(self):
         extractor = HumanInTheLoopProcessorStep("hitl")

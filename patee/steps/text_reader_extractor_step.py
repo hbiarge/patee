@@ -42,12 +42,12 @@ class TextReaderExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text=document_1_text,
+                text_blocks=document_1_text,
                 extra={}
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text=document_2_text,
+                text_blocks=document_2_text,
                 extra={}
             ),
         )

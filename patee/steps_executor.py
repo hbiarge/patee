@@ -182,29 +182,17 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
 
     def _load_result_from_previous_execution(self, source, step_dir: Path) -> StepResult:
         document_1_source, document_2_source = self._get_document_sources(source)
-        document_1_saved_result = step_dir / f"{document_1_source.document_path.stem}.txt"
-        document_2_saved_result = step_dir / f"{document_1_source.document_path.stem}.txt"
 
-        logger.debug("reading document 1 from %s ...", document_1_saved_result)
-        document_1_text = document_1_saved_result.read_text(encoding="utf-8")
+        logger.debug("reading document 1 ...")
+        document_1_context = document_1_source.create_context_executed_step(step_dir)
+        logger.debug("reading document 2 ...")
+        document_2_context = document_2_source.create_context_executed_step(step_dir)
 
-        logger.debug("reading document 2 from %s ...", document_2_saved_result)
-        document_2_text = document_2_saved_result.read_text(encoding="utf-8")
-
-        context = DocumentPairContext(
-            document_1=DocumentContext(
-                source=document_1_source,
-                text=document_1_text,
-                extra={}
-            ),
-            document_2=DocumentContext(
-                source=document_2_source,
-                text=document_2_text,
-                extra={}
-            ),
-        )
         result = StepResult(
-            context=context,
+            context=DocumentPairContext(
+                document_1=document_1_context,
+                document_2=document_2_context,
+            ),
             skipped=True,
         )
         return result

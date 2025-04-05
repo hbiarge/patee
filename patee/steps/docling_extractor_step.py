@@ -104,7 +104,7 @@ class DoclingExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text="\n".join(element[1] for element in document_1_result.extracted_text),
+                text_blocks="\n".join(element[1] for element in document_1_result.extracted_text),
                 extra={
                     "excluded_text": document_1_result.excluded_text,
                     "seen_labels": [label for label in document_1_result.seen_labels]
@@ -112,7 +112,7 @@ class DoclingExtractor(ParallelExtractStep):
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text="\n".join(element[1] for element in document_2_result.extracted_text),
+                text_blocks="\n".join(element[1] for element in document_2_result.extracted_text),
                 extra={
                     "excluded_text": document_2_result.excluded_text,
                     "seen_labels": [label for label in document_2_result.seen_labels]

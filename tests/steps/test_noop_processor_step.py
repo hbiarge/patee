@@ -2,8 +2,8 @@ from pathlib import Path
 
 from patee.step_types import StepContext
 from patee.steps.noop_processor_step import NoopProcessorStep
-from tests.utils.mothers.sources import get_step_result
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
+from tests.utils.mothers.sources import get_step_result, get_default_text_blocks
 
 OUT_DIR = Path(__file__).parent / "out" / "noop_processor_step"
 
@@ -31,5 +31,6 @@ class TestNoopProcessorStep:
         OUT_DIR.mkdir(parents=True,exist_ok=True)
         result.context.dump_to(OUT_DIR)
 
-        assert result.context.document_1.text == "patata"
-        assert result.context.document_2.text == "petete"
+        default_text_blocks = get_default_text_blocks()
+        assert result.context.document_1.text_blocks == default_text_blocks
+        assert result.context.document_2.text_blocks == default_text_blocks

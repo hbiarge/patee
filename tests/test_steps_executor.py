@@ -2,6 +2,7 @@ from patee.step_types import (
     StepResult,
     DocumentPairContext,
     StepMetadata,
+    TEXT_BLOCK_SEPARATOR
 )
 from patee.steps_executor import (
     NonPersistentStepsExecutor,
@@ -9,7 +10,8 @@ from patee.steps_executor import (
     IntelligentPersistenceStepsExecutor,
 )
 from tests.utils.fakes.step_fakes import FakeExtractor, FakeProcessor
-from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair, get_existing_document_pair_context
+from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair, get_existing_document_pair_context, \
+    get_default_text_blocks
 from utils.mothers.contexts import get_pipeline_context, get_run_context
 
 
@@ -35,8 +37,8 @@ class TestNonPersistentStepsExecutor:
         assert extract_step.was_called
         assert isinstance(result, StepResult)
         assert isinstance(result.context, DocumentPairContext)
-        assert result.context.document_1.text == "fake text 1"
-        assert result.context.document_2.text == "fake text 2"
+        assert result.context.document_1.text_blocks == ["fake text 1"]
+        assert result.context.document_2.text_blocks == ["fake text 2"]
         assert not result.should_stop_pipeline
         assert not result.skipped
 
@@ -59,13 +61,15 @@ class TestNonPersistentStepsExecutor:
         result = executor.execute_step(process_step, metadata, source)
 
         # Verify
+        default_text_blocks = [text + " fake" for text in get_default_text_blocks()]
         assert process_step.was_called
         assert isinstance(result, StepResult)
         assert isinstance(result.context, DocumentPairContext)
-        assert result.context.document_1.text == "patata fake"
-        assert result.context.document_2.text == "petete fake"
+        assert result.context.document_1.text_blocks == default_text_blocks
+        assert result.context.document_2.text_blocks == default_text_blocks
         assert not result.should_stop_pipeline
         assert not result.skipped
+
 
 class TestPersistentStepsExecutor:
     def test_extract_step_execution(self, tmp_path):
@@ -130,8 +134,9 @@ class TestPersistentStepsExecutor:
         assert (step_dir / "GUIA-PDDD.txt").exists()
 
         # Check file content
-        assert (step_dir / "GUIA-PDDD_ES.txt").read_text() == "patata fake"
-        assert (step_dir / "GUIA-PDDD.txt").read_text() == "petete fake"
+        default_text_blocks = [text + " fake" for text in get_default_text_blocks()]
+        assert (step_dir / "GUIA-PDDD_ES.txt").read_text().split(TEXT_BLOCK_SEPARATOR) == default_text_blocks
+        assert (step_dir / "GUIA-PDDD.txt").read_text().split(TEXT_BLOCK_SEPARATOR) == default_text_blocks
 
     def test_stop_pipeline_no_files_written(self, tmp_path):
         # Setup
@@ -201,11 +206,19 @@ class TestIntelligentPersistenceStepsExecutor:
         step_dir = tmp_path / "process_test"
         step_dir.mkdir(parents=True, exist_ok=True)
 
+        metadata = StepMetadata(
+            name="extract_test",
+            type="extract_fake",
+            idx=1,
+            config_hash=123456,
+        )
+
         # Create marker files
         main_marker = tmp_path / ".patee"
-        main_marker.touch()
+        main_marker.write_text(f"{source_hash}\n")
         step_marker = step_dir / ".patee"
-        step_marker.touch()
+        source_step_hash = f"{source_hash}--{hash(metadata)}"
+        step_marker.write_text(f"{source_step_hash}\n")
 
         # Create result files
         (step_dir / "GUIA-PDDD_ES.txt").write_text("Previously processed text")
@@ -216,25 +229,20 @@ class TestIntelligentPersistenceStepsExecutor:
         run_context = get_run_context(output_dir=tmp_path, source_hash=source_hash)
         executor = IntelligentPersistenceStepsExecutor(pipeline_context, run_context)
         process_step = FakeProcessor("process_test")
-        metadata = StepMetadata(
-            name="extract_test",
-            type="extract_fake",
-            idx=1,
-            config_hash=123456,
-        )
+
 
         source = get_existing_document_pair_context()
 
         # Verify initial state
-        assert not executor.source_has_been_previously_executed
+        assert executor.source_has_been_previously_executed
 
         # Execute
         result = executor.execute_step(process_step, metadata, source)
 
         # Verify
         # Should not call the process method since it's using cached results
-        assert process_step.was_called
+        assert not process_step.was_called
         assert isinstance(result, StepResult)
         assert isinstance(result.context, DocumentPairContext)
-        assert result.context.document_1.text == "patata fake"
-        assert result.context.document_2.text == "petete fake"
+        assert result.context.document_1.text_blocks == ["Previously processed text"]
+        assert result.context.document_2.text_blocks == ["Previously processed text"]

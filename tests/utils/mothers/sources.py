@@ -12,13 +12,13 @@ PDF_CA_FILE = SOURCES_DIR / "GUIA-PDDD.pdf"
 TXT_ES_FILE = SOURCES_DIR / "GUIA-PDDD_ES.txt"
 TXT_CA_FILE = SOURCES_DIR / "GUIA-PDDD.txt"
 
-def get_existing_pdf_file():
+def get_existing_pdf_file() -> Path:
     return PDF_ES_FILE
 
-def get_existing_single_file():
+def get_existing_single_file() -> SingleFile:
     return SingleFile(document_path=str(PDF_ES_FILE))
 
-def get_existing_monolingual_single_file(page_info:PageInfo = None):
+def get_existing_monolingual_single_file(page_info:PageInfo = None) -> MonolingualSingleFile:
     if page_info:
         return MonolingualSingleFile(
             document_path=str(PDF_ES_FILE),
@@ -28,7 +28,7 @@ def get_existing_monolingual_single_file(page_info:PageInfo = None):
 
     return MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
 
-def get_existing_monolingual_single_file_pair(mode: str = "pdf"):
+def get_existing_monolingual_single_file_pair(mode: str = "pdf") -> MonolingualSingleFilePair:
     id_pdf = mode == "pdf"
     return MonolingualSingleFilePair(
             document_1=MonolingualSingleFile(
@@ -46,14 +46,20 @@ def get_existing_monolingual_single_file_pair(mode: str = "pdf"):
             )
         )
 
-def get_existing_document_pair_context():
+def get_default_text_blocks() -> list[str]:
+    return [
+        "bloque de texto 1",
+        "bloque de texto 2",
+    ]
+
+def get_existing_document_pair_context() -> DocumentPairContext:
     return DocumentPairContext(
         document_1=DocumentContext(
             source=DocumentSource(
                 document_path=PDF_ES_FILE,
                 iso2_language="es",
             ),
-            text="patata",
+            text_blocks=get_default_text_blocks(),
             extra={},
         ),
         document_2=DocumentContext(
@@ -61,7 +67,7 @@ def get_existing_document_pair_context():
                 document_path=PDF_CA_FILE,
                 iso2_language="ca",
             ),
-            text="petete",
+            text_blocks=get_default_text_blocks(),
             extra={},
         ),
     )
