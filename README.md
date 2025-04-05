@@ -44,13 +44,13 @@ Patee operates through a configurable pipeline system:
 
 Patee supports two run modes:
 
-1. **Non-persistent**: All processing is done in memory, and results are not saved
+1. **Non-persistent**: All processing is done in memory, and step results are not saved
 
 ```python
 result = pipeline.run(source)
 ```
 
-2. **Persistent run**: Results are saved to disk, allowing for later retrieval and analysis
+2. **Persistent run**: Every step result is saved to disk, allowing for later retrieval and analysis
 
 ```python
 result = pipeline.run(source, Path("path/to/dir"))
@@ -85,7 +85,7 @@ It stops the pipeline execution to perform a human revision/edition of the text.
 In the first execution of the step:
 - The text of the previous step is persisted
 - A marker file is created (`patee_rename_me_to_done_when_human_in_the_loop_is_done`)
-- The pipeline execution is stops with a partial execution result
+- The pipeline execution is stopped and returns a `stopped` execution result
 
 When the human revision is done, the user should rename the marker file to `patee_done` and run the pipeline again.
 
@@ -93,40 +93,4 @@ The pipeline will then continue from the last step.
 
 ## Example Usage
 
-### Basic pipeline execution
-
-```python
-from pathlib import Path
-from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
-
-# Load the pipeline configuration from a YAML file
-pipeline = Patee.load_from('pipelines/pdf.yml')
-
-# Load a source to process
-document_1 = MonolingualSingleFile(
-            document_path=Path("sources/GUIA-PDDD_ES.pdf"),
-            iso2_language="es",
-        )
-document_2 = MonolingualSingleFile(
-            document_path=Path("sources/GUIA-PDDD.pdf"),
-            iso2_language="ca",
-        )
-config = PageInfo(
-            start_page=4,
-            end_page=5
-        )
-source = MonolingualSingleFilePair(
-        document_1=document_1,
-        document_2=document_2,
-        shared_config=config,
-    )
-    
-# Execute the pipeline
-result = pipeline.run(source)
-
-# Check if the pipeline executed successfully
-if result.completed:
-    print("Pipeline executed successfully")
-else:
-    print("Pipeline execution failed")
-```
+You can explore different examples in the [samples](https://github.com/hbiarge/patee/tree/main/samples) directory.
