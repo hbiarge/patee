@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from patee.step_types import StepContext
-from patee.steps.text_reader_extractor_step import TextReaderExtractor
+from patee.steps.text_extractor_step import TextReaderExtractor
 from tests.utils.mothers.sources import get_existing_monolingual_single_file_pair
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
 

@@ -19,7 +19,7 @@ class TextWriterProcessorStep(ParallelProcessStep):
         # Mandatory configuration
         output_path = kwargs.get("output_path")
         if output_path is None:
-            raise ValueError("output_path is required")
+            output_path = self._pipeline_context.execution_path
 
         provided_output_path = Path(output_path)
         if not provided_output_path.is_absolute():

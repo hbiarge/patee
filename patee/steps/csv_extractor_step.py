@@ -1,6 +1,8 @@
 import logging
 from typing import Union
 
+import pandas as pd
+
 from patee.core_types import PipelineContext
 from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
 from patee.step_types import (
@@ -16,13 +18,13 @@ from patee.step_types import (
 logger = logging.getLogger(__name__)
 
 
-class TextReaderExtractor(ParallelExtractStep):
+class CsvExtractor(ParallelExtractStep):
     def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
         super().__init__(name, pipeline_context)
 
     @staticmethod
     def step_type() -> str:
-        return "text_reader_extractor"
+        return "csv_extractor"
 
     def extract(self, context: StepContext,
                 source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
@@ -34,21 +36,27 @@ class TextReaderExtractor(ParallelExtractStep):
             raise ValueError(f"Unsupported source type: {type(source)}")
 
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
-        logger.debug("reading document 1 from %s ...", source.document_1.document_path)
-        document_1_text = source.document_1.document_path.read_text(encoding="utf-8")
+        raise NotImplementedError("Multi file extraction is not implemented yet.")
 
-        logger.debug("reading document 2 from %s ...", source.document_2.document_path)
-        document_2_text = source.document_2.document_path.read_text(encoding="utf-8")
+    def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
+        df = pd.read_csv(source.document_path)
+
+        language_1_blocks = []
+        language_2_blocks = []
+
+        for index, row in df.iterrows():
+            language_1_blocks.append(row[0])
+            language_2_blocks.append(row[1])
 
         context = DocumentPairContext(
             document_1=DocumentContext(
-                source=DocumentSource.from_monolingual_file(source.document_1),
-                text_blocks=document_1_text,
+                source=DocumentSource.from_multilingual_file(source, 0),
+                text_blocks=language_1_blocks,
                 extra={}
             ),
             document_2=DocumentContext(
-                source=DocumentSource.from_monolingual_file(source.document_2),
-                text_blocks=document_2_text,
+                source=DocumentSource.from_multilingual_file(source, 1),
+                text_blocks=language_2_blocks,
                 extra={}
             ),
         )
@@ -59,6 +67,3 @@ class TextReaderExtractor(ParallelExtractStep):
         logger.debug("monolingual single file pairs read successfully.")
 
         return result
-
-    def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
-        raise NotImplementedError("Single file extraction is not implemented yet.")

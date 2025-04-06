@@ -4,6 +4,11 @@ from pathlib import Path
 from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
 
 SAMPLES_DIR = Path(__file__).parent
+PIPELINES_DIR = SAMPLES_DIR / "pipelines"
+
+PDF_PIPELINE = PIPELINES_DIR / "from_pdf.yml"
+TEXT_PIPELINE = PIPELINES_DIR / "from_txt.yml"
+CSV_PIPELINE = PIPELINES_DIR / "from_csv.yml"
 
 # Set DEBUG level for patee
 logging.basicConfig(level=logging.DEBUG)
@@ -20,11 +25,8 @@ for name, level in libraries_log_levels.items():
     logging.getLogger(name).setLevel(level)
 
 
-def create_pipeline() -> Patee:
-    config = SAMPLES_DIR / "pipelines" / "pdf.yml"
-    pipeline = Patee.load_from(config)
-
-    print("patee steps: ", pipeline.step_names)
+def create_pipeline_from(config_path: Path) -> Patee:
+    pipeline = Patee.load_from(config_path)
 
     return pipeline
 
@@ -62,8 +64,8 @@ def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
 
 if __name__ == '__main__':
     # Create pipeline and source
-    patee = create_pipeline()
-    current_source = create_source()
+    patee = create_pipeline_from(CSV_PIPELINE)
+    # current_source = create_source()
 
     # Run pipeline
-    run_pipeline(patee, current_source)
+    # run_pipeline(patee, current_source)

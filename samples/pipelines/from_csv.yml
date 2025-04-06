@@ -1,0 +1,11 @@
+version: 1.0
+steps:
+  - type: csv_extractor
+    name: load
+
+  - type: write_to_file
+    name: save
+    config:
+      output_path: ./outputs # working directory relative
+      blocks_separator: "\n"
+      encoding: utf-8

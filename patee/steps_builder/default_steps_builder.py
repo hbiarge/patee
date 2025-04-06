@@ -1,7 +1,8 @@
 from patee.step_types import StepsBuilder, Step
 from patee.core_types import PipelineContext
-from patee.steps.text_reader_extractor_step import TextReaderExtractor
+from patee.steps.text_extractor_step import TextReaderExtractor
 from patee.steps.docling_extractor_step import DoclingExtractor
+from patee.steps.csv_extractor_step import CsvExtractor
 from patee.steps.noop_processor_step import NoopProcessorStep
 from patee.steps.human_in_the_loop_processor_step import HumanInTheLoopProcessorStep
 from patee.steps.text_writer_processor_step import TextWriterProcessorStep
@@ -14,6 +15,7 @@ class DefaultStepsBuilder(StepsBuilder):
             # Extractors
             TextReaderExtractor.step_type(),
             DoclingExtractor.step_type(),
+            CsvExtractor.step_type(),
             # Processors
             NoopProcessorStep.step_type(),
             HumanInTheLoopProcessorStep.step_type(),
@@ -30,6 +32,8 @@ class DefaultStepsBuilder(StepsBuilder):
             return TextReaderExtractor(step_name, pipeline_contex, **kwargs)
         elif step_type == DoclingExtractor.step_type():
             return DoclingExtractor(step_name, pipeline_contex, **kwargs)
+        elif step_type == CsvExtractor.step_type():
+            return CsvExtractor(step_name, pipeline_contex, **kwargs)
         # Processors
         elif step_type == NoopProcessorStep.step_type():
             return NoopProcessorStep(step_name, pipeline_contex, **kwargs)
