@@ -19,6 +19,7 @@ from .step_types import (
     ParallelExtractStep,
     ParallelExtractStep,
     StepMetadata,
+    StepsBuilder,
 )
 from .patee import (
     RunResult,
@@ -29,10 +30,6 @@ from .steps_executor import (
     NonPersistentStepsExecutor,
     PersistentStepsExecutor,
     IntelligentPersistenceStepsExecutor,
-)
-from .steps_builder import (
-    StepsBuilder,
-    DefaultStepsBuilder,
 )
 
 __all__ = [
@@ -59,5 +56,4 @@ __all__ = [
     "PersistentStepsExecutor",
     "IntelligentPersistenceStepsExecutor",
     "StepsBuilder",
-    "DefaultStepsBuilder",
 ]

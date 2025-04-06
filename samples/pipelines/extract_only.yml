@@ -1,9 +1,16 @@
 version: 1.0
 steps:
   - type: docling_extractor
-    name: parse
+    name: extract
     config:
       parser: docling # docling | pypdfium
       labels_to_extract: # section_header | list_item | text
         - text
         - list_item
+        - section_header
+  - type: write_to_file
+    name: save
+    config:
+      output_path: ./output # config file relative
+      blocks_separator: "\n"
+      encoding: utf-8

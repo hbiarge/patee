@@ -9,6 +9,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import NodeItem, DocItemLabel
 
+from patee.core_types import PipelineContext
 from patee.input_types import (
     MonolingualSingleFile,
     MonolingualSingleFilePair,
@@ -39,8 +40,8 @@ class _DoclingExtractionResult:
 
 class DoclingExtractor(ParallelExtractStep):
 
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name)
+    def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
+        super().__init__(name, pipeline_context)
 
         labels_to_extract = kwargs.get("labels_to_extract", None)
         if labels_to_extract is not None:
@@ -104,7 +105,7 @@ class DoclingExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text_blocks="\n".join(element[1] for element in document_1_result.extracted_text),
+                text_blocks=[element[1] for element in document_1_result.extracted_text],
                 extra={
                     "excluded_text": document_1_result.excluded_text,
                     "seen_labels": [label for label in document_1_result.seen_labels]
@@ -112,7 +113,7 @@ class DoclingExtractor(ParallelExtractStep):
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text_blocks="\n".join(element[1] for element in document_2_result.extracted_text),
+                text_blocks=[element[1] for element in document_2_result.extracted_text],
                 extra={
                     "excluded_text": document_2_result.excluded_text,
                     "seen_labels": [label for label in document_2_result.seen_labels]

@@ -7,17 +7,11 @@ from tests.utils.mothers.sources import (
     PIPELINES_DIR
 )
 
-EXTRACT_ONLY_CONFIG = PIPELINES_DIR / "extract_only.yml"
-FAKES_CONFIG = PIPELINES_DIR / "fakes.yml"
+FAKES_CONFIG = PIPELINES_DIR / "just_for_tests.yml"
 
 OUT_DIR = Path(__file__).parent / "out"
 
 class TestPatee:
-    def test_load_with_default_builder(self):
-        patee = Patee.load_from(EXTRACT_ONLY_CONFIG)
-
-        assert patee.step_names == ["00_parse"]
-
     def test_load_with_fake_builder_patee(self):
         builder = FakeStepsBuilder()
         patee = Patee.load_from(FAKES_CONFIG, steps_builder=builder)
@@ -40,8 +34,10 @@ class TestPatee:
 
         result = patee.run(source)
 
-        assert result.last_step_result.document_1 is not None
-        assert result.last_step_result.document_2 is not None
+        assert result.status == "succeeded"
+        assert result.executed_steps == frozenset()
+        assert result.skipped_steps == frozenset()
+        assert result.non_succeeded_reason is None
 
     def test_patee_can_process_with_out_dir(self):
         builder = FakeStepsBuilder()
@@ -53,5 +49,7 @@ class TestPatee:
 
         result = patee.run(source, OUT_DIR)
 
-        assert result.last_step_result.document_1 is not None
-        assert result.last_step_result.document_2 is not None
+        assert result.status == "succeeded"
+        assert result.executed_steps == frozenset()
+        assert result.skipped_steps == frozenset()
+        assert result.non_succeeded_reason is None

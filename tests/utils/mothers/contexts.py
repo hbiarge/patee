@@ -9,7 +9,10 @@ SOURCES_DIR = SAMPLES_DIR / "sources"
 
 
 def get_pipeline_context():
-    return PipelineContext(PIPELINES_DIR / "pdf.yml")
+    return PipelineContext(
+        config_path=PIPELINES_DIR / "pdf.yml",
+        execution_path=SAMPLES_DIR.parent / "tests",
+    )
 
 def get_run_context(output_dir: Union[Path, None], source_hash: str = "123456"):
     return RunContext(output_dir=output_dir, source_hash=source_hash)

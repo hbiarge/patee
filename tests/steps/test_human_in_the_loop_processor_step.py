@@ -10,12 +10,14 @@ OUT_DIR = Path(__file__).parent / "out" / "human_in_the_loop_processor_step"
 
 class TestHumanInTheLoopProcessorStep:
     def test_default_instance(self):
-        extractor = HumanInTheLoopProcessorStep("hitl")
+        context = get_pipeline_context()
+        extractor = HumanInTheLoopProcessorStep("hitl", context)
 
         assert extractor.name == "hitl"
 
     def test_can_process_do_nothing_if_step_dir_contex_is_none(self):
-        extractor = HumanInTheLoopProcessorStep("hitl")
+        context = get_pipeline_context()
+        extractor = HumanInTheLoopProcessorStep("hitl", context)
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
 
@@ -35,7 +37,8 @@ class TestHumanInTheLoopProcessorStep:
         assert result.context.document_2.text_blocks == default_text_blocks
 
     def test_can_process_stops_new_if_step_dir_contex_is_not_none(self):
-        extractor = HumanInTheLoopProcessorStep("hitl")
+        context = get_pipeline_context()
+        extractor = HumanInTheLoopProcessorStep("hitl", context)
         test_path: Path = OUT_DIR / "new"
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=test_path)
@@ -55,7 +58,8 @@ class TestHumanInTheLoopProcessorStep:
         assert result.context is None
 
     def test_can_process_stops_existing_if_step_dir_contex_is_not_none(self):
-        extractor = HumanInTheLoopProcessorStep("hitl")
+        context = get_pipeline_context()
+        extractor = HumanInTheLoopProcessorStep("hitl", context)
         test_path: Path = OUT_DIR / "waiting"
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=test_path)
@@ -78,7 +82,8 @@ class TestHumanInTheLoopProcessorStep:
         assert result.context is None
 
     def test_can_process_continues_if_step_dir_contex_is_not_none(self):
-        extractor = HumanInTheLoopProcessorStep("hitl")
+        context = get_pipeline_context()
+        extractor = HumanInTheLoopProcessorStep("hitl", context)
         test_path: Path = OUT_DIR / "continue"
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=test_path)

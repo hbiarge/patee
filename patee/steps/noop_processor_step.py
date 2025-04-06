@@ -1,5 +1,6 @@
 import logging
 
+from patee.core_types import PipelineContext
 from patee.step_types import (
     ParallelProcessStep,
     StepResult,
@@ -13,12 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 class NoopProcessorStep(ParallelProcessStep):
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name=name)
+    def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
+        super().__init__(name, pipeline_context)
 
     @staticmethod
     def step_type() -> str:
-        return "noop_step_processor"
+        return "noop"
 
     def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         context = DocumentPairContext(

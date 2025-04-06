@@ -1,5 +1,6 @@
 import logging
 
+from patee.core_types import PipelineContext
 from patee.step_types import (
     ParallelProcessStep,
     StepResult,
@@ -15,12 +16,12 @@ CONTINUE_STRING = "done"
 
 
 class HumanInTheLoopProcessorStep(ParallelProcessStep):
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name=name)
+    def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
+        super().__init__(name, pipeline_context)
 
     @staticmethod
     def step_type() -> str:
-        return "human_in_the_loop_processor"
+        return "human_in_the_loop"
 
     def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         if context.step_dir is None:

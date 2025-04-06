@@ -6,6 +6,7 @@ from typing import Union
 @dataclass
 class PipelineContext:
     config_path: Path
+    execution_path: Path
 
 
 @dataclass

@@ -14,8 +14,9 @@ from .step_types import (
     StepMetadata,
     DocumentPairContext,
 )
-from .steps_builder import StepsBuilder, DefaultStepsBuilder
+from .steps_builder.default_steps_builder import StepsBuilder
 from .steps_executor import NonPersistentStepsExecutor, PersistentStepsExecutor
+from .steps_builder.default_steps_builder import DefaultStepsBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class RunResult:
     status: str
-    last_step_result: DocumentPairContext
     executed_steps: FrozenSet[str]
     skipped_steps: FrozenSet[str]
     non_succeeded_reason: str = None
@@ -49,7 +49,10 @@ class Patee:
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
 
-        pipeline_context = PipelineContext(config_path=config_path)
+        pipeline_context = PipelineContext(
+            config_path=config_path,
+            execution_path=Path.cwd(),
+        )
 
         logger.debug("reading configuration file from %s ...", config_path)
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -90,7 +93,7 @@ class Patee:
                 idx=step_idx,
                 config_hash=hash(json.dumps(step_config, sort_keys=True, ensure_ascii=True)),
             )
-            step_instance = instance._steps_builder.build(step_type, step_idx_name, **step_config)
+            step_instance = instance._steps_builder.build(step_type, step_idx_name, pipeline_context, **step_config)
 
             instance._steps.append((step_instance, metadata))
             unique_step_names.add(step_idx_name)
@@ -149,7 +152,6 @@ class Patee:
         return RunResult(
             status="stopped" if step_result.should_stop_pipeline else "succeeded",
             non_succeeded_reason="Pipeline stopped by human in the loop step" if step_result.should_stop_pipeline else None,
-            last_step_result=step_result.context,
             executed_steps=frozenset(),
             skipped_steps=frozenset(),
         )

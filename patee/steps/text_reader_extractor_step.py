@@ -1,6 +1,7 @@
 import logging
 from typing import Union
 
+from patee.core_types import PipelineContext
 from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
 from patee.step_types import (
     ParallelExtractStep,
@@ -16,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class TextReaderExtractor(ParallelExtractStep):
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name)
+    def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
+        super().__init__(name, pipeline_context)
 
     @staticmethod
     def step_type() -> str:

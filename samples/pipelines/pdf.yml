@@ -8,8 +8,15 @@ steps:
         - text
         - list_item
 
-  - type: human_in_the_loop_processor
+  - type: human_in_the_loop
     name: human_in_the_loop
 
-  - type: noop_step_processor
+  - type: noop
     name: noop
+
+  - type: write_to_file
+    name: save
+    config:
+      output_path: ./output # config file relative
+      blocks_separator: "\n"
+      encoding: utf-8

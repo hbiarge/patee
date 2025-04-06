@@ -9,12 +9,14 @@ OUT_DIR = Path(__file__).parent / "out" / "text_reader_extractor"
 
 class TestTextReaderExtractor:
     def test_text_reader_default_instance(self):
-        extractor = TextReaderExtractor("text_reader_extractor")
+        context = get_pipeline_context()
+        extractor = TextReaderExtractor("text_reader_extractor", context)
 
         assert extractor.name == "text_reader_extractor"
 
     def test_text_reader_extractor_can_process(self):
-        extractor = TextReaderExtractor("text_reader_extractor")
+        context = get_pipeline_context()
+        extractor = TextReaderExtractor("text_reader_extractor", context)
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
 

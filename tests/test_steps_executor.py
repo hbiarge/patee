@@ -21,7 +21,7 @@ class TestNonPersistentStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
         executor = NonPersistentStepsExecutor(pipeline_context, run_context)
-        extract_step = FakeExtractor("extract_test")
+        extract_step = FakeExtractor("extract_test", pipeline_context)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -47,7 +47,7 @@ class TestNonPersistentStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
         executor = NonPersistentStepsExecutor(pipeline_context, run_context)
-        process_step = FakeProcessor("process_test")
+        process_step = FakeProcessor("process_test", pipeline_context)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -77,7 +77,7 @@ class TestPersistentStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=tmp_path)
         executor = PersistentStepsExecutor(pipeline_context, run_context)
-        extract_step = FakeExtractor("extract_test")
+        extract_step = FakeExtractor("extract_test", pipeline_context)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -109,7 +109,7 @@ class TestPersistentStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=tmp_path)
         executor = PersistentStepsExecutor(pipeline_context, run_context)
-        process_step = FakeProcessor("process_test")
+        process_step = FakeProcessor("process_test", pipeline_context)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -143,7 +143,7 @@ class TestPersistentStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=tmp_path)
         executor = PersistentStepsExecutor(pipeline_context, run_context)
-        extract_step = FakeExtractor("extract_test", should_stop=True)
+        extract_step = FakeExtractor("extract_test", pipeline_context, should_stop=True)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -174,7 +174,7 @@ class TestIntelligentPersistenceStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=tmp_path, source_hash="test_hash")
         executor = IntelligentPersistenceStepsExecutor(pipeline_context, run_context)
-        extract_step = FakeExtractor("extract_test")
+        extract_step = FakeExtractor("extract_test", pipeline_context)
         metadata = StepMetadata(
             name="extract_test",
             type="extract_fake",
@@ -228,7 +228,7 @@ class TestIntelligentPersistenceStepsExecutor:
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=tmp_path, source_hash=source_hash)
         executor = IntelligentPersistenceStepsExecutor(pipeline_context, run_context)
-        process_step = FakeProcessor("process_test")
+        process_step = FakeProcessor("process_test", pipeline_context)
 
 
         source = get_existing_document_pair_context()

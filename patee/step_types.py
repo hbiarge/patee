@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
-from .core_types import StepContext
+from .core_types import StepContext, PipelineContext
 from .input_types import MonolingualSingleFile, MultilingualSingleFile, MonolingualSingleFilePair
 
 
@@ -92,16 +92,17 @@ class StepResult:
 class Step(ABC):
     """Base class for all extraction steps."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, pipeline_context: PipelineContext):
         """Initialize the step."""
         self.name = name
+        self._pipeline_context = pipeline_context
 
 
 class ParallelExtractStep(Step):
     """Base class for all extraction steps."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, name: str, pipeline_context: PipelineContext):
+        super().__init__(name, pipeline_context)
 
     @abstractmethod
     def extract(self, context: StepContext,
@@ -112,8 +113,8 @@ class ParallelExtractStep(Step):
 class ParallelProcessStep(Step):
     """Base class for all processing steps."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, name: str, pipeline_context: PipelineContext):
+        super().__init__(name, pipeline_context)
 
     @abstractmethod
     def process(self, context: StepContext,
@@ -137,3 +138,16 @@ class StepMetadata:
         if isinstance(other, StepMetadata):
             return self.__key() == other.__key()
         return NotImplemented
+
+
+class StepsBuilder(ABC):
+    """Abstract class for building processing steps."""
+
+    @abstractmethod
+    def get_supported_step_types(self) -> set[str]:
+        """Get the supported step types."""
+        pass
+
+    @abstractmethod
+    def build(self, step_type: str, step_name: str, pipeline_context: PipelineContext, **kwargs) -> Step:
+        pass

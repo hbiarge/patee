@@ -52,7 +52,7 @@ def create_source():
     return source
 
 def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
-    result = pipeline.run(source)
+    result = pipeline.run(source, Path(__file__).parent / "outputs")
 
     if result.status == "succeeded":
         print("Pipeline fully executed")

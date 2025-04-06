@@ -9,42 +9,48 @@ OUT_DIR = Path(__file__).parent / "out" / "docling_extractor"
 
 class TestDoclingExtractor:
     def test_docling_default_instance(self):
-        extractor = DoclingExtractor("docling_extractor")
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context)
 
         assert extractor.name == "docling_extractor"
         assert extractor.parser == "docling"
         assert extractor.labels_to_extract == { "text"}
 
     def test_docling_instance_with_explicit_docling_parser(self):
-        extractor = DoclingExtractor("docling_extractor", **{"parser": "docling"})
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context, **{"parser": "docling"})
 
         assert extractor.name == "docling_extractor"
         assert extractor.parser == "docling"
         assert extractor.labels_to_extract == { "text"}
 
     def test_docling_instance_with_explicit_pypdfium_parser(self):
-        extractor = DoclingExtractor("docling_extractor", **{"parser": "pypdfium"})
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context, **{"parser": "pypdfium"})
 
         assert extractor.name == "docling_extractor"
         assert extractor.parser == "pypdfium"
         assert extractor.labels_to_extract == { "text"}
 
     def test_docling_instance_with_explicit_extract_labels_as_string(self):
-        extractor = DoclingExtractor("docling_extractor", **{"labels_to_extract": "list_item"})
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context, **{"labels_to_extract": "list_item"})
 
         assert extractor.name == "docling_extractor"
         assert extractor.parser == "docling"
         assert extractor.labels_to_extract == { "list_item"}
 
     def test_docling_instance_with_explicit_extract_labels_as_iterable(self):
-        extractor = DoclingExtractor("docling_extractor", **{"labels_to_extract": ["text", "list_item"]})
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context, **{"labels_to_extract": ["text", "list_item"]})
 
         assert extractor.name == "docling_extractor"
         assert extractor.parser == "docling"
         assert extractor.labels_to_extract == { "text", "list_item"}
 
     def test_docling_extractor_can_process(self):
-        extractor = DoclingExtractor("docling_extractor")
+        context = get_pipeline_context()
+        extractor = DoclingExtractor("docling_extractor", context)
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
 

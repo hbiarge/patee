@@ -10,12 +10,14 @@ OUT_DIR = Path(__file__).parent / "out" / "noop_processor_step"
 
 class TestNoopProcessorStep:
     def test_noop_default_instance(self):
-        extractor = NoopProcessorStep("no-op")
+        context = get_pipeline_context()
+        extractor = NoopProcessorStep("no-op", context)
 
         assert extractor.name == "no-op"
 
     def test_noop_can_process(self):
-        extractor = NoopProcessorStep("no-op")
+        context = get_pipeline_context()
+        extractor = NoopProcessorStep("no-op", context)
         pipeline_context = get_pipeline_context()
         run_context = get_run_context(output_dir=None)
 

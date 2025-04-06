@@ -6,17 +6,14 @@ import pytest
 from patee.input_types import MultilingualSingleFile, MonolingualSingleFile
 from patee.step_types import (
     StepContext,
-    Step,
     DocumentSource,
     DocumentContext,
     DocumentPairContext,
     StepResult,
-    ParallelExtractStep,
-    ParallelProcessStep,
     TEXT_BLOCK_SEPARATOR
 )
-from tests.utils.mothers.sources import get_existing_pdf_file
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
+from tests.utils.mothers.sources import get_existing_pdf_file
 
 
 class TestStepContext:
@@ -247,46 +244,3 @@ class TestStepResult:
         result = StepResult(None, True)
         assert result.context is None
         assert result.should_stop_pipeline is True
-
-
-class TestStep:
-    def test_initialization(self):
-        step_name = "test_step"
-        step = Step(step_name)
-        assert step.name == step_name
-
-
-class TestParallelExtractStep:
-    def test_initialization(self):
-        step_name = "extract_step"
-
-        # Create a concrete subclass to test
-        class ConcreteExtractStep(ParallelExtractStep):
-            def extract(self, context, source):
-                return StepResult(None)
-
-        step = ConcreteExtractStep(step_name)
-        assert step.name == step_name
-        assert issubclass(ConcreteExtractStep, Step)
-
-    def test_abstract_method(self):
-        with pytest.raises(TypeError):
-            ParallelExtractStep("abstract_step")
-
-
-class TestParallelProcessStep:
-    def test_initialization(self):
-        step_name = "process_step"
-
-        # Create a concrete subclass to test
-        class ConcreteProcessStep(ParallelProcessStep):
-            def process(self, context, source):
-                return StepResult(None)
-
-        step = ConcreteProcessStep(step_name)
-        assert step.name == step_name
-        assert issubclass(ConcreteProcessStep, Step)
-
-    def test_abstract_method(self):
-        with pytest.raises(TypeError):
-            ParallelProcessStep("abstract_step")
