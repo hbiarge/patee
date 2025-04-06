@@ -5,6 +5,7 @@ from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageI
 
 SAMPLES_DIR = Path(__file__).parent
 PIPELINES_DIR = SAMPLES_DIR / "pipelines"
+OUTPUT_DIR = SAMPLES_DIR / "outputs"
 
 PDF_PIPELINE = PIPELINES_DIR / "from_pdf.yml"
 TEXT_PIPELINE = PIPELINES_DIR / "from_txt.yml"
@@ -54,7 +55,7 @@ def create_source():
     return source
 
 def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
-    result = pipeline.run(source, Path(__file__).parent / "outputs")
+    result = pipeline.run(source, OUTPUT_DIR)
 
     if result.status == "succeeded":
         print("Pipeline fully executed")
@@ -64,8 +65,8 @@ def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
 
 if __name__ == '__main__':
     # Create pipeline and source
-    patee = create_pipeline_from(CSV_PIPELINE)
-    # current_source = create_source()
+    patee = create_pipeline_from(PDF_PIPELINE)
+    current_source = create_source()
 
     # Run pipeline
-    # run_pipeline(patee, current_source)
+    run_pipeline(patee, current_source)

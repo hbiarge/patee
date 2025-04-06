@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _DoclingExtractionResult:
-    """
-    Class to hold the result of the extraction process.
-    """
     extracted_text: Iterable[NodeItem]
     excluded_text: Iterable[NodeItem]
     seen_labels: set[DocItemLabel]
@@ -46,9 +43,9 @@ class DoclingExtractor(ParallelExtractStep):
         labels_to_extract = kwargs.get("labels_to_extract", None)
         if labels_to_extract is not None:
             if isinstance(labels_to_extract, str):
-                self.labels_to_extract = { labels_to_extract }
+                self.labels_to_extract = { labels_to_extract.strip() }
             elif isinstance(labels_to_extract, Iterable):
-                self.labels_to_extract = {label for label in labels_to_extract}
+                self.labels_to_extract = {label.strip() for label in labels_to_extract}
             else:
                 raise TypeError(f"labels_to_extract must be str or iterable of str")
         else:
