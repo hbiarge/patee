@@ -21,7 +21,18 @@ class NoopProcessorStep(ParallelProcessStep):
     def step_type() -> str:
         return "noop"
 
-    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
+        context = DocumentContext(
+                source=source.source,
+                text_blocks=source.text_blocks,
+                extra={},
+        )
+
+        return StepResult(
+            context=context,
+        )
+
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=source.document_1.source,

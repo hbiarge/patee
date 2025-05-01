@@ -1,7 +1,5 @@
-from typing import Union
-
 from patee.core_types import PipelineContext
-from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from patee.input_types import MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
 from patee.step_types import (
     ParallelExtractStep,
     StepResult,
@@ -37,8 +35,7 @@ class FakeExtractor(ParallelExtractStep):
         self.was_called = False
         self.should_stop = should_stop
 
-    def extract(self, context: StepContext,
-                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+    def _extract_monolingual_single_file(self, context: StepContext, source: MonolingualSingleFile) -> StepResult:
         self.was_called = True
         if self.should_stop:
             return StepResult(
@@ -47,44 +44,71 @@ class FakeExtractor(ParallelExtractStep):
                 skipped=True
             )
 
-        if isinstance(source, MonolingualSingleFilePair):
-            context = DocumentPairContext(
-                document_1=DocumentContext(
-                    source=DocumentSource(document_path=source.document_1.document_path,
-                                          iso2_language=source.document_1.iso2_language),
-                    text_blocks=["fake text 1"],
-                    extra={},
-                ),
-                document_2=DocumentContext(
-                    source=DocumentSource(document_path=source.document_2.document_path,
-                                          iso2_language=source.document_2.iso2_language),
-                    text_blocks=["fake text 2"],
-                    extra={},
-                ),
-            )
+        context = DocumentContext(
+            source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_language),
+            text_blocks=["fake text"],
+            extra={},
+        )
+        return StepResult(
+            context=context,
+            should_stop_pipeline=False,
+            skipped=False
+        )
+
+    def _extract_monolingual_single_file_pair(self, context: StepContext,
+                                              source: MonolingualSingleFilePair) -> StepResult:
+        self.was_called = True
+        if self.should_stop:
             return StepResult(
-                context=context,
-                should_stop_pipeline=False,
-                skipped=False
+                context=None,
+                should_stop_pipeline=True,
+                skipped=True
             )
-        elif isinstance(source, MultilingualSingleFile):
-            context = DocumentPairContext(
-                document_1=DocumentContext(
-                    source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
-                    text_blocks=["fake text 1"],
-                    extra={},
-                ),
-                document_2=DocumentContext(
-                    source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
-                    text_blocks=["fake text 2"],
-                    extra={},
-                ),
-            )
+
+        context = DocumentPairContext(
+            document_1=DocumentContext(
+                source=DocumentSource(document_path=source.document_1.document_path,
+                                      iso2_language=source.document_1.iso2_language),
+                text_blocks=["fake text 1"],
+                extra={},
+            ),
+            document_2=DocumentContext(
+                source=DocumentSource(document_path=source.document_2.document_path,
+                                      iso2_language=source.document_2.iso2_language),
+                text_blocks=["fake text 2"],
+                extra={},
+            ),
+        )
+        return StepResult(
+            context=context,
+            should_stop_pipeline=False,
+            skipped=False
+        )
+
+    def _extract_multilingual_single_file(self, context: StepContext, source: MultilingualSingleFile) -> StepResult:
+        self.was_called = True
+        if self.should_stop:
             return StepResult(
-                context=context,
+                context=None,
+                should_stop_pipeline=True,
+                skipped=True
             )
-        else:
-            raise ValueError(f"Unsupported source type: {type(source)}")
+
+        context = DocumentPairContext(
+            document_1=DocumentContext(
+                source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
+                text_blocks=["fake text 1"],
+                extra={},
+            ),
+            document_2=DocumentContext(
+                source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
+                text_blocks=["fake text 2"],
+                extra={},
+            ),
+        )
+        return StepResult(
+            context=context,
+        )
 
 
 class FakeProcessor(ParallelProcessStep):
@@ -92,7 +116,18 @@ class FakeProcessor(ParallelProcessStep):
         super().__init__(name, pipeline_context)
         self.was_called = False
 
-    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
+        self.was_called = True
+        context = DocumentContext(
+            source=source.source,
+            text_blocks=[text + " fake" for text in source.text_blocks],
+            extra={},
+        )
+        return StepResult(
+            context=context,
+        )
+
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         self.was_called = True
         context = DocumentPairContext(
             document_1=DocumentContext(

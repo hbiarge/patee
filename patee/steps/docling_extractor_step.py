@@ -126,22 +126,34 @@ class DoclingExtractor(ParallelExtractStep):
     def step_type() -> str:
         return "docling_extractor"
 
-    def extract(self, context: StepContext,
-                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        if isinstance(source, MonolingualSingleFilePair):
-            return self._extract_file_pair(source)
-        elif isinstance(source, MultilingualSingleFile):
-            return self._extract_single_file(source)
-        else:
-            raise ValueError(f"Unsupported type: {type(source)}")
+    def _extract_monolingual_single_file(self, context: StepContext, source: MonolingualSingleFile) -> StepResult:
+        logger.debug("converting document from %s ...", source.document_path)
+        result = self._convert_file(source, None)
+        logger.info("document seen labels: %s", [str(label) for label in result.seen_labels])
 
+        context = DocumentContext(
+            source=DocumentSource.from_monolingual_file(source),
+            text_blocks=[element[1] for element in result.extracted_text],
+            extra={
+                "excluded_text": result.excluded_text,
+                "seen_labels": [label for label in result.seen_labels]
+            },
+        )
+        result = StepResult(
+            context=context,
+        )
 
-    def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
+        logger.debug("monolingual single file converted successfully.")
+
+        return result
+
+    def _extract_monolingual_single_file_pair(self, context: StepContext,
+                                              source: MonolingualSingleFilePair) -> StepResult:
         logger.debug("converting document 1 from %s ...", source.document_1.document_path)
         document_1_result = self._convert_file(source.document_1, source.shared_config)
         logger.info("document 1 seen labels: %s", [str(label) for label in document_1_result.seen_labels])
 
-        logger.debug("converting document 2 from %s ...",  source.document_2.document_path)
+        logger.debug("converting document 2 from %s ...", source.document_2.document_path)
         document_2_result = self._convert_file(source.document_2, source.shared_config)
         logger.info("document 2 seen labels: %s", [str(label) for label in document_2_result.seen_labels])
 
@@ -171,10 +183,10 @@ class DoclingExtractor(ParallelExtractStep):
 
         return result
 
-    def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
-        raise NotImplementedError("Single file extraction is not implemented yet.")
+    def _extract_multilingual_single_file(self, context: StepContext, source: MultilingualSingleFile) -> StepResult:
+        raise NotImplementedError("Multilingual single file extraction is not implemented yet.")
 
-    def _convert_file(self, file: MonolingualSingleFile, shared_config: DoclingConfig) -> _DoclingExtractionResult:
+    def _convert_file(self, file: MonolingualSingleFile, shared_config: Union[DoclingConfig, None]) -> _DoclingExtractionResult:
         page_range = [shared_config.start_page, shared_config.end_page] if shared_config \
             else [file.config.start_page, file.config.end_page] if file.config \
             else None

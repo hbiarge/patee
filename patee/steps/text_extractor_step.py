@@ -1,8 +1,7 @@
 import logging
-from typing import Union
 
 from patee.core_types import PipelineContext
-from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from patee.input_types import MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
 from patee.step_types import (
     ParallelExtractStep,
     StepResult,
@@ -24,16 +23,26 @@ class TextReaderExtractor(ParallelExtractStep):
     def step_type() -> str:
         return "text_extractor"
 
-    def extract(self, context: StepContext,
-                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        if isinstance(source, MonolingualSingleFilePair):
-            return self._extract_file_pair(source)
-        elif isinstance(source, MultilingualSingleFile):
-            return self._extract_single_file(source)
-        else:
-            raise ValueError(f"Unsupported source type: {type(source)}")
+    def _extract_monolingual_single_file(self, context: StepContext, source: MonolingualSingleFile) -> StepResult:
+        logger.debug("reading document from %s ...", source.document_path)
+        document_text = source.document_path.read_text(encoding="utf-8")
 
-    def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
+        context = DocumentContext(
+            source=DocumentSource.from_monolingual_file(source),
+            text_blocks=[document_text],
+            extra={}
+        )
+
+        result = StepResult(
+            context=context,
+        )
+
+        logger.debug("monolingual single file read successfully.")
+
+        return result
+
+    def _extract_monolingual_single_file_pair(self, context: StepContext,
+                                              source: MonolingualSingleFilePair) -> StepResult:
         logger.debug("reading document 1 from %s ...", source.document_1.document_path)
         document_1_text = source.document_1.document_path.read_text(encoding="utf-8")
 
@@ -60,5 +69,5 @@ class TextReaderExtractor(ParallelExtractStep):
 
         return result
 
-    def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
-        raise NotImplementedError("Single file extraction is not implemented yet.")
+    def _extract_multilingual_single_file(self, context: StepContext, source: MultilingualSingleFile) -> StepResult:
+        raise NotImplementedError("Multilingual single file extraction is not implemented yet.")

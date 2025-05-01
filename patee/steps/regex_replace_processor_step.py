@@ -40,18 +40,21 @@ class RegexReplaceStep(ParallelProcessStep):
     def step_type() -> str:
         return "regex_replace"
 
-    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
-        for idx, block in enumerate(source.document_1.text_blocks):
-            for replacement in self.replacements:
-                block = replacement[0].sub(replacement[1], block)
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
+        self._replace_document_blocks(source.text_blocks)
+        context = DocumentContext(
+            source=source.source,
+            text_blocks=source.text_blocks,
+            extra={},
+        )
 
-            source.document_1.text_blocks[idx] = block
+        return StepResult(
+            context=context,
+        )
 
-        for idx, block in enumerate(source.document_2.text_blocks):
-            for replacement in self.replacements:
-                block = replacement[0].sub(replacement[1], block)
-
-            source.document_2.text_blocks[idx] = block
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+        self._replace_document_blocks(source.document_1.text_blocks)
+        self._replace_document_blocks(source.document_2.text_blocks)
 
         context = DocumentPairContext(
             document_1=DocumentContext(
@@ -65,6 +68,14 @@ class RegexReplaceStep(ParallelProcessStep):
                 extra={},
             )
         )
+
         return StepResult(
             context=context,
         )
+
+    def _replace_document_blocks(self, original_blocks: list[str]):
+        for idx, block in enumerate(original_blocks):
+            for replacement in self.replacements:
+                block = replacement[0].sub(replacement[1], block)
+
+            original_blocks[idx] = block

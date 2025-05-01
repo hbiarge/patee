@@ -12,19 +12,21 @@ steps:
             parser: docling # docling | pypdfium
 
   - type: regex_filter
-    name: only SV
+    name: filter_lines
     config:
       include:
-        - name: only SV blocks starting with a lowercase letter
+        - name: definitions
+          regex: "^[A-Z-]+$"
+        - name: SV blocks starting with a lowercase letter
           regex: "^[a-z]{1}.+ SV,"
 
   - type: regex_replace
-    name: remove parenthesis and SV
+    name: cleanup_and_normalize
     config:
       replacements:
-        - name: remove parenthesis
-          regex: "\\(.*?\\)"
-          replacement: ""
+#        - name: remove parenthesis
+#          regex: "\\(.*?\\)"
+#          replacement: ""
         - name: remove SV
           regex: "SV,"
           replacement: ""

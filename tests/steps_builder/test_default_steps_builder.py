@@ -21,6 +21,8 @@ class TestDefaultStepsBuilder:
             "csv_extractor",
             "noop",
             "human_in_the_loop",
+            "regex_replace",
+            "regex_filter",
             "write_to_file",
         }
         assert self.builder.get_supported_step_types() == expected_types

@@ -6,6 +6,7 @@ from patee.step_types import (
     ParallelProcessStep,
     StepResult,
     StepContext,
+    DocumentContext,
     DocumentPairContext,
 )
 
@@ -47,7 +48,21 @@ class TextWriterProcessorStep(ParallelProcessStep):
     def step_type() -> str:
         return "write_to_file"
 
-    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
+        document_path = self._output_path / f"{source.source.document_path.stem}.txt"
+
+        document_path.write_text(
+            data=self._block_separator.join(source.text_blocks),
+            encoding=self._encoding,
+        )
+
+        logger.debug(f"Document written to {document_path}")
+
+        return StepResult(
+            context=source,
+        )
+
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         document_1_path = self._output_path / f"{source.document_1.source.document_path.stem}.txt"
         document_2_path = self._output_path / f"{source.document_2.source.document_path.stem}.txt"
 

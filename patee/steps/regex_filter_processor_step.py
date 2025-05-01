@@ -37,22 +37,22 @@ class RegexFilterStep(ParallelProcessStep):
     def step_type() -> str:
         return "regex_filter"
 
-    def process(self, context: StepContext, source: DocumentPairContext) -> StepResult:
-        document_1_filtered = []
-        for block in source.document_1.text_blocks:
-            for regex in self.include:
-                match = regex.search(block)
-                if match is not None:
-                    document_1_filtered.append(match.group())
-                    break
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
+        filtered_blocks = self._filter_document_blocks(source.text_blocks)
 
-        document_2_filtered = []
-        for block in source.document_2.text_blocks:
-            for regex in self.include:
-                match = regex.search(block)
-                if match is not None:
-                    document_2_filtered.append(match.group())
-                    break
+        context = DocumentContext(
+            source=source.source,
+            text_blocks=filtered_blocks,
+            extra={},
+        )
+        return StepResult(
+            context=context,
+        )
+
+
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+        document_1_filtered = self._filter_document_blocks(source.document_1.text_blocks)
+        document_2_filtered = self._filter_document_blocks(source.document_2.text_blocks)
 
         context = DocumentPairContext(
             document_1=DocumentContext(
@@ -69,3 +69,14 @@ class RegexFilterStep(ParallelProcessStep):
         return StepResult(
             context=context,
         )
+
+    def _filter_document_blocks(self, original_blocks: list[str]) -> list[str]:
+        filtered_blocks = []
+        for block in original_blocks:
+            for regex in self.include:
+                match = regex.search(block)
+                if match is not None:
+                    filtered_blocks.append(match.group())
+                    break
+
+        return filtered_blocks

@@ -78,7 +78,7 @@ class DocumentPairContext:
 
 @dataclass(frozen=True)
 class StepResult:
-    context: Union[DocumentPairContext, None]
+    context: Union[DocumentContext, DocumentPairContext, None]
     should_stop_pipeline: bool = False
     skipped: bool = False
 
@@ -99,27 +99,60 @@ class Step(ABC):
 
 
 class ParallelExtractStep(Step):
-    """Base class for all extraction steps."""
 
     def __init__(self, name: str, pipeline_context: PipelineContext):
         super().__init__(name, pipeline_context)
 
-    @abstractmethod
     def extract(self, context: StepContext,
-                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+                source: Union[MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
+        if source is None:
+            raise ValueError("Source cannot be None")
+        elif isinstance(source, MonolingualSingleFile):
+            return self._extract_monolingual_single_file(context, source)
+        elif isinstance(source, MonolingualSingleFilePair):
+            return self._extract_monolingual_single_file_pair(context, source)
+        elif isinstance(source, MultilingualSingleFile):
+            return self._extract_multilingual_single_file(context, source)
+        else:
+            raise ValueError(f"Unsupported source type: {type(source)}")
+
+    @abstractmethod
+    def _extract_monolingual_single_file(self, context: StepContext, source: MonolingualSingleFile) -> StepResult:
+        pass
+
+    @abstractmethod
+    def _extract_monolingual_single_file_pair(self, context: StepContext, source: MonolingualSingleFilePair) -> StepResult:
+        pass
+
+    @abstractmethod
+    def _extract_multilingual_single_file(self, context: StepContext, source: MultilingualSingleFile) -> StepResult:
         pass
 
 
 class ParallelProcessStep(Step):
-    """Base class for all processing steps."""
 
     def __init__(self, name: str, pipeline_context: PipelineContext):
         super().__init__(name, pipeline_context)
 
-    @abstractmethod
     def process(self, context: StepContext,
-                source: DocumentPairContext) -> StepResult:
+                source: Union[DocumentContext, DocumentPairContext]) -> StepResult:
+        if source is None:
+            raise ValueError("Source cannot be None")
+        elif isinstance(source, DocumentContext):
+            return self._process_document(context, source)
+        elif isinstance(source, DocumentPairContext):
+            return self._process_document_pair(context, source)
+        else:
+            raise ValueError(f"Unsupported source type: {type(source)}")
+
+    @abstractmethod
+    def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
         pass
+
+    @abstractmethod
+    def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
+        pass
+
 
 @dataclass(frozen=True)
 class StepMetadata:
@@ -141,11 +174,9 @@ class StepMetadata:
 
 
 class StepsBuilder(ABC):
-    """Abstract class for building processing steps."""
 
     @abstractmethod
     def get_supported_step_types(self) -> set[str]:
-        """Get the supported step types."""
         pass
 
     @abstractmethod

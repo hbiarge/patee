@@ -1,11 +1,11 @@
 import logging
 from dataclasses import dataclass
-from typing import Union, cast
+from typing import cast
 
 import pandas as pd
 
 from patee.core_types import PipelineContext
-from patee.input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from patee.input_types import MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
 from patee.step_types import (
     ParallelExtractStep,
     StepResult,
@@ -40,16 +40,27 @@ class CsvExtractor(ParallelExtractStep):
     def step_type() -> str:
         return "csv_extractor"
 
-    def extract(self, context: StepContext,
-                source: Union[MonolingualSingleFilePair, MultilingualSingleFile]) -> StepResult:
-        if isinstance(source, MonolingualSingleFilePair):
-            return self._extract_file_pair(source)
-        elif isinstance(source, MultilingualSingleFile):
-            return self._extract_single_file(source)
-        else:
-            raise ValueError(f"Unsupported source type: {type(source)}")
+    def _extract_monolingual_single_file(self, context: StepContext, source: MonolingualSingleFile) -> StepResult:
+        if not isinstance(source.config, MonolingualFileCsvConfig):
+            raise ValueError("individual config must be of type MonolingualFileCsvConfig")
 
-    def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
+        config = cast(MonolingualFileCsvConfig, source.config)
+        df = pd.read_csv(source.document_path, **config.options)
+        blocks = df[config.language_idx].tolist()
+
+        context = DocumentContext(
+            source=DocumentSource.from_monolingual_file(source),
+            text_blocks=blocks,
+            extra={},
+        )
+
+        result = StepResult(
+            context=context,
+        )
+        logger.debug("monolingual single file read successfully.")
+        return result
+
+    def _extract_monolingual_single_file_pair(self, context: StepContext, source: MonolingualSingleFilePair) -> StepResult:
         if source.shared_config is not None:
             if not isinstance(source.shared_config, MultilingualFileCsvConfig):
                 raise ValueError("shared config must be of type MultilingualFileCsvConfig")
@@ -90,10 +101,7 @@ class CsvExtractor(ParallelExtractStep):
 
         return result
 
-        if source.document_1.config is not None and not isinstance(source.document_1.config, MonolingualFileCsvConfig):
-            raise ValueError("individual config must be of type MonolingualFileCsvConfig")
-
-    def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
+    def _extract_multilingual_single_file(self, context: StepContext, source: MultilingualSingleFile) -> StepResult:
         if source.config is not None and not isinstance(source.config, MultilingualFileCsvConfig):
             raise ValueError("Invalid config type for MultilingualSingleFile")
 

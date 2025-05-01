@@ -9,11 +9,12 @@ from .step_types import (
     ParallelProcessStep,
     StepContext,
     StepMetadata,
+    DocumentContext,
     DocumentPairContext,
     StepResult,
     DocumentSource,
 )
-from .input_types import MonolingualSingleFilePair, MultilingualSingleFile
+from .input_types import MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 class StepsExecutor(ABC):
     @abstractmethod
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
+                     source: Union[MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile, DocumentContext, DocumentPairContext]) -> StepResult:
         pass
 
 
@@ -31,7 +32,7 @@ class NonPersistentStepsExecutor(StepsExecutor):
         self._run_context = run_context
 
     def execute_step(self, step: Union[ParallelExtractStep, ParallelProcessStep], metadata: StepMetadata,
-                     source: Union[MonolingualSingleFilePair, MultilingualSingleFile, DocumentPairContext]) -> StepResult:
+                     source: Union[MonolingualSingleFile, MonolingualSingleFilePair, MultilingualSingleFile, DocumentContext, DocumentPairContext]) -> StepResult:
         logger.info("start executing %s step in non persistent mode...", step.name)
 
         context = StepContext(
@@ -40,12 +41,18 @@ class NonPersistentStepsExecutor(StepsExecutor):
             step_dir=None
         )
 
-        if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
-            result = step.extract(context, source)
-        elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
-            result = step.process(context, source)
+        if isinstance(step, ParallelExtractStep):
+            if isinstance(source, MonolingualSingleFile) or isinstance(source, MonolingualSingleFilePair) or isinstance(source, MultilingualSingleFile):
+                result = step.extract(context, source)
+            else:
+                raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
+        elif isinstance(step, ParallelProcessStep):
+            if isinstance(source, DocumentContext) or isinstance(source, DocumentPairContext):
+                result = step.process(context, source)
+            else:
+                raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
         else:
-            raise ValueError("step must be a subclass of either ParallelExtractStep or ParallelProcessStep")
+            raise ValueError(f"step must be a subclass of either ParallelExtractStep or ParallelProcessStep: {type(step)}")
 
         logger.info("%s step executed in %s seconds.", step.name, 0)
         return result
@@ -69,12 +76,20 @@ class PersistentStepsExecutor(StepsExecutor):
             step_dir=step_dir
         )
 
-        if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
-            result = step.extract(context, source)
-        elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
-            result = step.process(context, source)
+        if isinstance(step, ParallelExtractStep):
+            if isinstance(source, MonolingualSingleFile) or isinstance(source, MonolingualSingleFilePair) or isinstance(
+                    source, MultilingualSingleFile):
+                result = step.extract(context, source)
+            else:
+                raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
+        elif isinstance(step, ParallelProcessStep):
+            if isinstance(source, DocumentContext) or isinstance(source, DocumentPairContext):
+                result = step.process(context, source)
+            else:
+                raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
         else:
-            raise ValueError("step must be a subclass of either ParallelExtractStep or ParallelProcessStep")
+            raise ValueError(
+                f"step must be a subclass of either ParallelExtractStep or ParallelProcessStep: {type(step)}")
 
         if not result.should_stop_pipeline:
             result.context.dump_to(step_dir)
@@ -119,12 +134,21 @@ class IntelligentPersistenceStepsExecutor(StepsExecutor):
                 step_dir=step_dir,
             )
 
-            if isinstance(step, ParallelExtractStep) and not isinstance(source, DocumentPairContext):
-                result = step.extract(context, source)
-            elif isinstance(step, ParallelProcessStep) and isinstance(source, DocumentPairContext):
-                result = step.process(context, source)
+            if isinstance(step, ParallelExtractStep):
+                if isinstance(source, MonolingualSingleFile) or isinstance(source,
+                                                                           MonolingualSingleFilePair) or isinstance(
+                        source, MultilingualSingleFile):
+                    result = step.extract(context, source)
+                else:
+                    raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
+            elif isinstance(step, ParallelProcessStep):
+                if isinstance(source, DocumentContext) or isinstance(source, DocumentPairContext):
+                    result = step.process(context, source)
+                else:
+                    raise ValueError(f"Invalid source type for {step.name} step: {type(source)}")
             else:
-                raise ValueError("step must be a subclass of either ParallelExtractStep or ParallelProcessStep")
+                raise ValueError(
+                    f"step must be a subclass of either ParallelExtractStep or ParallelProcessStep: {type(step)}")
 
             if not result.should_stop_pipeline:
                 result.context.dump_to(step_dir)

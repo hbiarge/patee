@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile
+from patee import Patee, MonolingualSingleFile
 from patee.steps import DoclingConfig
 
 SAMPLES_DIR = Path(__file__).parent
@@ -26,22 +26,13 @@ for name, level in libraries_log_levels.items():
 
 
 def create_source():
-    document_1 = MonolingualSingleFile(
-            document_path=SAMPLES_DIR / "sources" / "Diccionari_sinonims_Espinal_a2006.pdf",
-            iso2_language="es",
-        )
-    document_2 = MonolingualSingleFile(
-            document_path=SAMPLES_DIR / "sources" / "Diccionari_sinonims_Espinal_a2006.pdf",
-            iso2_language="ca",
-        )
-    config = DoclingConfig(
+    return MonolingualSingleFile(
+        document_path=SAMPLES_DIR / "sources" / "Diccionari_sinonims_Espinal_a2006.pdf",
+        iso2_language="ca",
+        config=DoclingConfig(
             start_page=76,
             end_page=77
         )
-    return MonolingualSingleFilePair(
-        document_1=document_1,
-        document_2=document_2,
-        shared_config=config,
     )
 
 def run_pipeline(pipeline, source):
