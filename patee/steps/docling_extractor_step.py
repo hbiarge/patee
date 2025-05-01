@@ -1,6 +1,7 @@
 import logging
+import sys
 from dataclasses import dataclass
-from typing import Union, Iterable
+from typing import Union, Iterable, Set
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat, ConversionStatus
@@ -14,7 +15,6 @@ from patee.input_types import (
     MonolingualSingleFile,
     MonolingualSingleFilePair,
     MultilingualSingleFile,
-    PageInfo,
 )
 from patee.step_types import (
     ParallelExtractStep,
@@ -35,6 +35,43 @@ class _DoclingExtractionResult:
     seen_labels: set[DocItemLabel]
 
 
+@dataclass
+class DoclingConfig:
+    start_page: int = 1
+    end_page: int = sys.maxsize
+    pages_to_exclude: Set[int] = None
+
+    def __key(self):
+        return self.start_page, self.end_page, frozenset(sorted(self.pages_to_exclude))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        if isinstance(other, DoclingConfig):
+            return self.__key() == other.__key()
+        return NotImplemented
+
+    def __post_init__(self):
+        # Validate page range
+        if self.start_page < 1:
+            raise ValueError(f"start_page must be at least 1, got {self.start_page}")
+
+        if self.end_page < self.start_page:
+            raise ValueError(f"end_page ({self.end_page}) must be >= start_page ({self.start_page})")
+
+        # Initialize empty list of pages_to_exclude if None
+        if self.pages_to_exclude is None:
+            self.pages_to_exclude = set[int]()
+
+        # Validate exclude_pages
+        for page in self.pages_to_exclude:
+            if page < 1:
+                raise ValueError(f"exclude_pages must contain positive integers, got {page}")
+            if page < self.start_page or page > self.end_page:
+                raise ValueError(f"exclude_pages entry {page} is outside range {self.start_page}-{self.end_page}")
+
+
 class DoclingExtractor(ParallelExtractStep):
 
     def __init__(self, name: str, pipeline_context: PipelineContext, **kwargs):
@@ -51,6 +88,13 @@ class DoclingExtractor(ParallelExtractStep):
         else:
             self.labels_to_extract = {str(DocItemLabel.TEXT)}
 
+        formats = kwargs.get("formats", None)
+
+        if formats is not None and isinstance(formats, Iterable):
+            allowed_formats = []
+            for dl_format in formats:
+                print(dl_format)
+
         pipeline_options = PdfPipelineOptions()
         pipeline_options.do_ocr = False
 
@@ -58,6 +102,7 @@ class DoclingExtractor(ParallelExtractStep):
         if parser is None or parser == "docling":
             self.parser = "docling"
             self._converter = DocumentConverter(
+                allowed_formats=[InputFormat.PDF],
                 format_options={
                     InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
                 }
@@ -65,6 +110,7 @@ class DoclingExtractor(ParallelExtractStep):
         elif parser == "pypdfium":
             self.parser = "pypdfium"
             self._converter = DocumentConverter(
+                allowed_formats=[InputFormat.PDF],
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
@@ -128,12 +174,12 @@ class DoclingExtractor(ParallelExtractStep):
     def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
         raise NotImplementedError("Single file extraction is not implemented yet.")
 
-    def _convert_file(self, file: MonolingualSingleFile, shared_page_info: PageInfo) -> _DoclingExtractionResult:
-        page_range = [shared_page_info.start_page, shared_page_info.end_page] if shared_page_info \
-            else [file.page_info.start_page, file.page_info.end_page] if file.page_info \
+    def _convert_file(self, file: MonolingualSingleFile, shared_config: DoclingConfig) -> _DoclingExtractionResult:
+        page_range = [shared_config.start_page, shared_config.end_page] if shared_config \
+            else [file.config.start_page, file.config.end_page] if file.config \
             else None
-        excluded_pages = shared_page_info.pages_to_exclude if shared_page_info \
-            else file.page_info.pages_to_exclude if file.page_info \
+        excluded_pages = shared_config.pages_to_exclude if shared_config \
+            else file.config.pages_to_exclude if file.config \
             else None
 
         result: ConversionResult

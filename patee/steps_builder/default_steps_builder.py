@@ -5,6 +5,8 @@ from patee.steps.docling_extractor_step import DoclingExtractor
 from patee.steps.csv_extractor_step import CsvExtractor
 from patee.steps.noop_processor_step import NoopProcessorStep
 from patee.steps.human_in_the_loop_processor_step import HumanInTheLoopProcessorStep
+from patee.steps.regex_filter_processor_step import RegexFilterStep
+from patee.steps.regex_replace_processor_step import RegexReplaceStep
 from patee.steps.text_writer_processor_step import TextWriterProcessorStep
 
 
@@ -19,6 +21,8 @@ class DefaultStepsBuilder(StepsBuilder):
             # Processors
             NoopProcessorStep.step_type(),
             HumanInTheLoopProcessorStep.step_type(),
+            RegexFilterStep.step_type(),
+            RegexReplaceStep.step_type(),
             # Persisters
             TextWriterProcessorStep.step_type(),
         }
@@ -39,6 +43,10 @@ class DefaultStepsBuilder(StepsBuilder):
             return NoopProcessorStep(step_name, pipeline_contex, **kwargs)
         elif step_type == HumanInTheLoopProcessorStep.step_type():
             return HumanInTheLoopProcessorStep(step_name, pipeline_contex, **kwargs)
+        elif step_type == RegexFilterStep.step_type():
+            return RegexFilterStep(step_name, pipeline_contex, **kwargs)
+        elif step_type == RegexReplaceStep.step_type():
+            return RegexReplaceStep(step_name, pipeline_contex, **kwargs)
         # Persisters
         elif step_type == TextWriterProcessorStep.step_type():
             return TextWriterProcessorStep(step_name, pipeline_contex, **kwargs)

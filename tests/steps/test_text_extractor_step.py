@@ -7,6 +7,7 @@ from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
 
 OUT_DIR = Path(__file__).parent / "out" / "text_reader_extractor"
 
+
 class TestTextReaderExtractor:
     def test_text_reader_default_instance(self):
         context = get_pipeline_context()

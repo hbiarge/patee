@@ -1,11 +1,9 @@
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 from patee.input_types import (
-    PageInfo,
     SingleFile,
     MonolingualSingleFile,
     MonolingualSingleFilePair,
@@ -16,50 +14,6 @@ from tests.utils.mothers.sources import (
     PDF_ES_FILE,
     PDF_CA_FILE
 )
-
-
-class TestPageInfo:
-    def test_create_default(self):
-        page_info = PageInfo()
-
-        assert page_info.start_page == 1
-        assert page_info.end_page == sys.maxsize
-        assert page_info.pages_to_exclude == set()
-
-    def test_create_with_custom_values(self):
-        page_info = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
-
-        assert page_info.start_page == 5
-        assert page_info.end_page == 10
-        assert page_info.pages_to_exclude == {7, 8}
-
-    def test_invalid_start_page(self):
-        with pytest.raises(ValueError, match="start_page must be at least 1"):
-            PageInfo(start_page=0)
-
-    def test_invalid_end_page(self):
-        with pytest.raises(ValueError, match="end_page .* must be >= start_page"):
-            PageInfo(start_page=10, end_page=5)
-
-    def test_invalid_exclude_pages_negative(self):
-        with pytest.raises(ValueError, match="exclude_pages must contain positive integers"):
-            PageInfo(pages_to_exclude={-1, 5})
-
-    def test_invalid_exclude_pages_out_of_range(self):
-        with pytest.raises(ValueError, match="exclude_pages entry .* is outside range"):
-            PageInfo(start_page=5, end_page=10, pages_to_exclude={3, 7})
-
-    def test_equals(self):
-        page_info1 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
-        page_info2 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
-
-        assert page_info1 == page_info2
-
-    def test_non_equals(self):
-        page_info1 = PageInfo(start_page=5, end_page=10, pages_to_exclude={7, 8})
-        page_info2 = PageInfo(start_page=5, end_page=10, pages_to_exclude={6, 8})
-
-        assert page_info1 != page_info2
 
 
 class TestSingleFile:
@@ -103,17 +57,17 @@ class TestMonolingualSingleFile:
 
         assert mono_file.document_path == PDF_ES_FILE
         assert mono_file.iso2_language == "es"
-        assert mono_file.page_info is None
+        assert mono_file.config is None
 
-    def test_create_with_page_info(self, monkeypatch):
+    def test_create_with_config(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        page_info = PageInfo(start_page=5, end_page=10)
+        config = dict
 
-        mono_file = get_existing_monolingual_single_file(page_info=page_info)
+        mono_file = get_existing_monolingual_single_file(dict)
 
-        assert mono_file.page_info == page_info
+        assert mono_file.config == config
 
     def test_invalid_language_code(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
@@ -124,33 +78,33 @@ class TestMonolingualSingleFile:
 
 
 class TestMonolingualSingleFilePair:
-    def test_create_valid_with_shared_page_info(self, monkeypatch):
+    def test_create_valid_with_shared_config(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
         doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
-        page_info = PageInfo(start_page=5, end_page=10)
+        shared_config = dict
 
         pair = MonolingualSingleFilePair(
             document_1=doc1,
             document_2=doc2,
-            shared_config=page_info
+            shared_config=shared_config,
         )
 
         assert pair.document_1 == doc1
         assert pair.document_2 == doc2
-        assert pair.shared_config == page_info
+        assert pair.shared_config == shared_config
 
-    def test_create_valid_with_individual_page_info(self, monkeypatch):
+    def test_create_valid_with_individual_config(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        page_info1 = PageInfo(start_page=5, end_page=10)
-        page_info2 = PageInfo(start_page=6, end_page=12)
+        doc1_config = dict
+        doc2_config = dict
 
-        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info1)
-        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca", page_info=page_info2)
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", config=doc1_config)
+        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca", config=doc2_config)
 
         pair = MonolingualSingleFilePair(
             document_1=doc1,
@@ -158,22 +112,6 @@ class TestMonolingualSingleFilePair:
         )
 
         assert pair.shared_config is None
-
-    def test_create_default_shared_page_info(self, monkeypatch):
-        monkeypatch.setattr(Path, "exists", lambda x: True)
-        monkeypatch.setattr(Path, "is_file", lambda x: True)
-
-        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
-        doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
-
-        pair = MonolingualSingleFilePair(
-            document_1=doc1,
-            document_2=doc2
-        )
-
-        assert pair.shared_config is not None
-        assert pair.shared_config.start_page == 1
-        assert pair.shared_config.end_page == sys.maxsize
 
     def test_same_language_error(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
@@ -185,30 +123,31 @@ class TestMonolingualSingleFilePair:
         with pytest.raises(ValueError, match="Documents must have different languages"):
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
 
-    def test_mixed_page_info_error_one_missing(self, monkeypatch):
+    def test_mixed_config_error_one_missing(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        page_info = PageInfo(start_page=5, end_page=10)
-        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
+        doc1_config = dict
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", config=doc1_config)
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
 
-        with pytest.raises(ValueError, match="Define page information for both documents or use shared page info"):
+        with pytest.raises(ValueError, match="Define configuration for both documents or use shared config"):
             MonolingualSingleFilePair(document_1=doc1, document_2=doc2)
 
-    def test_mixed_page_info_error_with_shared(self, monkeypatch):
+    def test_mixed_config_error_with_shared(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        page_info = PageInfo(start_page=5, end_page=10)
-        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", page_info=page_info)
+        doc1_config = dict
+        shared_config = dict
+        doc1 = MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es", config=doc1_config)
         doc2 = MonolingualSingleFile(document_path=PDF_CA_FILE, iso2_language="ca")
 
-        with pytest.raises(ValueError, match="Define page information for both documents or use shared page info"):
+        with pytest.raises(ValueError, match="Define configuration for both documents or use shared config"):
             MonolingualSingleFilePair(
                 document_1=doc1,
                 document_2=doc2,
-                shared_config=page_info
+                shared_config=shared_config,
             )
 
 
@@ -223,19 +162,19 @@ class TestMultilingualSingleFile:
         )
         assert multi_file.document_path == PDF_ES_FILE
         assert multi_file.iso2_languages == ["es", "ca"]
-        assert multi_file.page_info is None
+        assert multi_file.config is None
 
-    def test_create_with_page_info(self, monkeypatch):
+    def test_create_with_config(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)
         monkeypatch.setattr(Path, "is_file", lambda x: True)
 
-        page_info = PageInfo(start_page=5, end_page=10)
+        config = dict
         multi_file = MultilingualSingleFile(
             document_path=PDF_ES_FILE,
             iso2_languages=["es", "ca"],
-            page_info=page_info
+            config=config
         )
-        assert multi_file.page_info == page_info
+        assert multi_file.config == config
 
     def test_invalid_language_code_number(self, monkeypatch):
         monkeypatch.setattr(Path, "exists", lambda x: True)

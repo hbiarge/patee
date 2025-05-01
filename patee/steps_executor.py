@@ -12,7 +12,6 @@ from .step_types import (
     DocumentPairContext,
     StepResult,
     DocumentSource,
-    DocumentContext,
 )
 from .input_types import MonolingualSingleFilePair, MultilingualSingleFile
 

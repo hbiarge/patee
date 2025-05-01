@@ -44,18 +44,20 @@ class Patee:
 
     @classmethod
     def load_from(cls, config_path: Path, steps_builder: StepsBuilder = None) -> "Patee":
-        """Load the pipeline from a configuration file."""
         # Validate the config file exists
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file {config_path} does not exist.")
+
+        try:
+            logger.debug("reading configuration file from %s ...", config_path)
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+             Exception("The config has invalid YAML syntax.", exc)
 
         pipeline_context = PipelineContext(
             config_path=config_path,
             execution_path=Path.cwd(),
         )
-
-        logger.debug("reading configuration file from %s ...", config_path)
-        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
         if not steps_builder:
             logger.debug("no steps builder provided. Using default steps builder.")

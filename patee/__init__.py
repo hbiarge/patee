@@ -4,7 +4,6 @@ from .core_types import (
     StepContext,
 )
 from .input_types import (
-    PageInfo,
     SingleFile,
     MonolingualSingleFile,
     MonolingualSingleFilePair,
@@ -36,7 +35,6 @@ __all__ = [
     "PipelineContext",
     "RunContext",
     "StepContext",
-    "PageInfo",
     "SingleFile",
     "MonolingualSingleFile",
     "MonolingualSingleFilePair",

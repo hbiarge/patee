@@ -1,15 +1,14 @@
 import logging
 from pathlib import Path
 
-from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile, PageInfo
+from patee import Patee, MonolingualSingleFilePair, MonolingualSingleFile
+from patee.steps import DoclingConfig
 
 SAMPLES_DIR = Path(__file__).parent
 PIPELINES_DIR = SAMPLES_DIR / "pipelines"
 OUTPUT_DIR = SAMPLES_DIR / "outputs"
 
 PDF_PIPELINE = PIPELINES_DIR / "from_pdf.yml"
-TEXT_PIPELINE = PIPELINES_DIR / "from_txt.yml"
-CSV_PIPELINE = PIPELINES_DIR / "from_csv.yml"
 
 # Set DEBUG level for patee
 logging.basicConfig(level=logging.DEBUG)
@@ -26,35 +25,26 @@ for name, level in libraries_log_levels.items():
     logging.getLogger(name).setLevel(level)
 
 
-def create_pipeline_from(config_path: Path) -> Patee:
-    pipeline = Patee.load_from(config_path)
-
-    return pipeline
-
 def create_source():
     document_1 = MonolingualSingleFile(
-            document_path=SAMPLES_DIR / "sources" / "GUIA-PDDD_ES.pdf",
+            document_path=SAMPLES_DIR / "sources" / "Diccionari_sinonims_Espinal_a2006.pdf",
             iso2_language="es",
         )
     document_2 = MonolingualSingleFile(
-            document_path=SAMPLES_DIR / "sources" / "GUIA-PDDD.pdf",
+            document_path=SAMPLES_DIR / "sources" / "Diccionari_sinonims_Espinal_a2006.pdf",
             iso2_language="ca",
         )
-    config = PageInfo(
-            start_page=4,
-            end_page=5
+    config = DoclingConfig(
+            start_page=76,
+            end_page=77
         )
-    source = MonolingualSingleFilePair(
+    return MonolingualSingleFilePair(
         document_1=document_1,
         document_2=document_2,
         shared_config=config,
     )
 
-    print("source: ", source)
-
-    return source
-
-def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
+def run_pipeline(pipeline, source):
     result = pipeline.run(source, OUTPUT_DIR)
 
     if result.status == "succeeded":
@@ -65,8 +55,8 @@ def run_pipeline(pipeline: Patee, source: MonolingualSingleFilePair):
 
 if __name__ == '__main__':
     # Create pipeline and source
-    patee = create_pipeline_from(PDF_PIPELINE)
-    current_source = create_source()
+    patee = Patee.load_from(PDF_PIPELINE)
+    pdf_source = create_source()
 
     # Run pipeline
-    run_pipeline(patee, current_source)
+    run_pipeline(patee, pdf_source)

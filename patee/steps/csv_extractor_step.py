@@ -1,5 +1,6 @@
 import logging
-from typing import Union
+from dataclasses import dataclass
+from typing import Union, cast
 
 import pandas as pd
 
@@ -16,6 +17,19 @@ from patee.step_types import (
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MultilingualFileCsvConfig:
+    language_1_idx: int
+    language_2_idx: int
+    options: dict = None
+
+
+@dataclass(frozen=True)
+class MonolingualFileCsvConfig:
+    language_idx: int
+    options: dict = None
 
 
 class CsvExtractor(ParallelExtractStep):
@@ -36,17 +50,59 @@ class CsvExtractor(ParallelExtractStep):
             raise ValueError(f"Unsupported source type: {type(source)}")
 
     def _extract_file_pair(self, source: MonolingualSingleFilePair) -> StepResult:
-        raise NotImplementedError("Multi file extraction is not implemented yet.")
+        if source.shared_config is not None:
+            if not isinstance(source.shared_config, MultilingualFileCsvConfig):
+                raise ValueError("shared config must be of type MultilingualFileCsvConfig")
+
+            shared_config = cast(MultilingualFileCsvConfig, source.shared_config)
+            df1 = pd.read_csv(source.document_1.document_path, **shared_config.options)
+            language_1_blocks = df1[shared_config.language_1_idx].tolist()
+            df2 = pd.read_csv(source.document_2.document_path, **shared_config.options)
+            language_2_blocks = df2[shared_config.language_2_idx].tolist()
+        else:
+            if not isinstance(source.document_1.config, MonolingualFileCsvConfig):
+                raise ValueError("individual config must be of type MonolingualFileCsvConfig")
+            if not isinstance(source.document_2.config, MonolingualFileCsvConfig):
+                raise ValueError("individual config must be of type MonolingualFileCsvConfig")
+
+            config_1 = cast(MonolingualFileCsvConfig, source.document_1.config)
+            config_2 = cast(MonolingualFileCsvConfig, source.document_2.config)
+            df1 = pd.read_csv(source.document_1.document_path, **config_1.options)
+            language_1_blocks = df1[config_1.language_idx].tolist()
+            df2 = pd.read_csv(source.document_2.document_path, **config_2.options)
+            language_2_blocks = df2[config_2.language_idx].tolist()
+
+        context = DocumentPairContext(
+            document_1=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_1),
+                text_blocks=language_1_blocks,
+                extra={}
+            ),
+            document_2=DocumentContext(
+                source=DocumentSource.from_monolingual_file(source.document_2),
+                text_blocks=language_2_blocks,
+                extra={}
+            ),
+        )
+        result = StepResult(
+            context=context,
+        )
+
+        return result
+
+        if source.document_1.config is not None and not isinstance(source.document_1.config, MonolingualFileCsvConfig):
+            raise ValueError("individual config must be of type MonolingualFileCsvConfig")
 
     def _extract_single_file(self, source: MultilingualSingleFile) -> StepResult:
-        df = pd.read_csv(source.document_path)
+        if source.config is not None and not isinstance(source.config, MultilingualFileCsvConfig):
+            raise ValueError("Invalid config type for MultilingualSingleFile")
 
-        language_1_blocks = []
-        language_2_blocks = []
+        config = cast(MultilingualFileCsvConfig, source.config)
 
-        for index, row in df.iterrows():
-            language_1_blocks.append(row[0])
-            language_2_blocks.append(row[1])
+        df = pd.read_csv(source.document_path, **config.options)
+
+        language_1_blocks = df[config.language_1_idx].tolist()
+        language_2_blocks = df[config.language_2_idx].tolist()
 
         context = DocumentPairContext(
             document_1=DocumentContext(

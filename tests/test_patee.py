@@ -11,6 +11,7 @@ FAKES_CONFIG = PIPELINES_DIR / "just_for_tests.yml"
 
 OUT_DIR = Path(__file__).parent / "out"
 
+
 class TestPatee:
     def test_load_with_fake_builder_patee(self):
         builder = FakeStepsBuilder()

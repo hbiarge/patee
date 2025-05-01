@@ -1,44 +1,6 @@
-import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Set, Union, List
-
-
-@dataclass
-class PageInfo:
-    start_page: int = 1
-    end_page: int = sys.maxsize
-    pages_to_exclude: Set[int] = None
-
-    def __key(self):
-        return self.start_page, self.end_page, frozenset(sorted(self.pages_to_exclude))
-
-    def __hash__(self):
-        return hash(self.__key())
-
-    def __eq__(self, other):
-        if isinstance(other, PageInfo):
-            return self.__key() == other.__key()
-        return NotImplemented
-
-    def __post_init__(self):
-        # Validate page range
-        if self.start_page < 1:
-            raise ValueError(f"start_page must be at least 1, got {self.start_page}")
-
-        if self.end_page < self.start_page:
-            raise ValueError(f"end_page ({self.end_page}) must be >= start_page ({self.start_page})")
-
-        # Initialize empty list of pages_to_exclude if None
-        if self.pages_to_exclude is None:
-            self.pages_to_exclude = set[int]()
-
-        # Validate exclude_pages
-        for page in self.pages_to_exclude:
-            if page < 1:
-                raise ValueError(f"exclude_pages must contain positive integers, got {page}")
-            if page < self.start_page or page > self.end_page:
-                raise ValueError(f"exclude_pages entry {page} is outside range {self.start_page}-{self.end_page}")
+from typing import Union, List, Any
 
 
 @dataclass()
@@ -72,10 +34,10 @@ class SingleFile:
 @dataclass
 class MonolingualSingleFile(SingleFile):
     iso2_language: str
-    page_info: PageInfo = None
+    config: Any = None
 
     def __key(self):
-        return self.document_path, self.iso2_language, self.page_info
+        return self.document_path, self.iso2_language, self.config
 
     def __hash__(self):
         return hash(self.__key())
@@ -95,11 +57,9 @@ class MonolingualSingleFile(SingleFile):
 
 @dataclass
 class MonolingualSingleFilePair:
-    """Represent a pair of monolingual single files processing configuration."""
-
     document_1: MonolingualSingleFile
     document_2: MonolingualSingleFile
-    shared_config: PageInfo = None
+    shared_config: Any = None
 
     def __key(self):
         return self.document_1, self.document_2, self.shared_config
@@ -117,29 +77,23 @@ class MonolingualSingleFilePair:
         if self.document_1.iso2_language == self.document_2.iso2_language:
             raise ValueError("Documents must have different languages")
 
-        # Should be just one shared page info or each document must have its own
+        # Should be just one shared config or each document must have its own
         if self.shared_config is None:
-            if self.document_1.page_info is None and self.document_2.page_info is None:
-                # If no page info defined, create a new shared one
-                self.shared_config = PageInfo()
-            elif self.document_1.page_info is None and self.document_2.page_info is not None:
-                raise ValueError("Define page information for both documents or use shared page info")
-            elif self.document_1.page_info is not None and self.document_2.page_info is None:
-                raise ValueError("Define page information for both documents or use shared page info")
+            if ((self.document_1.config is not None and self.document_2.config is None) or
+                (self.document_1.config is None and self.document_2.config is not None)):
+                raise ValueError("Define configuration for both documents or use shared config")
         else:
-            if self.document_1.page_info is not None or self.document_2.page_info is not None:
-                raise ValueError("Define page information for both documents or use shared page info")
+            if self.document_1.config is not None or self.document_2.config is not None:
+                raise ValueError("Define configuration for both documents or use shared config")
 
 
 @dataclass
 class MultilingualSingleFile(SingleFile):
-    """Represent a monolingual single file processing configuration."""
-
     iso2_languages: List[str]
-    page_info: PageInfo = None
+    config: Any = None
 
     def __key(self):
-        return self.document_path, self.iso2_languages, self.page_info
+        return self.document_path, self.iso2_languages, self.config
 
     def __hash__(self):
         return hash(self.__key())

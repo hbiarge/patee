@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Any
 
-from patee.input_types import SingleFile, MonolingualSingleFile, MonolingualSingleFilePair, PageInfo
+from patee.input_types import SingleFile, MonolingualSingleFile, MonolingualSingleFilePair
 from patee.step_types import StepResult, DocumentSource, DocumentContext, DocumentPairContext
 
 SAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "samples"
@@ -18,15 +19,12 @@ def get_existing_pdf_file() -> Path:
 def get_existing_single_file() -> SingleFile:
     return SingleFile(document_path=str(PDF_ES_FILE))
 
-def get_existing_monolingual_single_file(page_info:PageInfo = None) -> MonolingualSingleFile:
-    if page_info:
+def get_existing_monolingual_single_file(config: Any = None) -> MonolingualSingleFile:
         return MonolingualSingleFile(
             document_path=str(PDF_ES_FILE),
             iso2_language="es",
-            page_info=page_info
+            config=config
         )
-
-    return MonolingualSingleFile(document_path=PDF_ES_FILE, iso2_language="es")
 
 def get_existing_monolingual_single_file_pair(mode: str = "pdf") -> MonolingualSingleFilePair:
     id_pdf = mode == "pdf"
@@ -39,11 +37,7 @@ def get_existing_monolingual_single_file_pair(mode: str = "pdf") -> MonolingualS
                 document_path=PDF_CA_FILE if id_pdf else TXT_CA_FILE,
                 iso2_language="ca",
             ),
-            shared_config=PageInfo(
-                start_page=4,
-                end_page=6,
-                pages_to_exclude={5}
-            )
+            shared_config=None
         )
 
 def get_default_text_blocks() -> list[str]:
