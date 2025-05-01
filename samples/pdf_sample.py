@@ -31,7 +31,7 @@ def create_source():
         iso2_language="ca",
         config=DoclingConfig(
             start_page=76,
-            end_page=77
+            end_page=77 #1393
         )
     )
 

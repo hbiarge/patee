@@ -76,7 +76,11 @@ class RegexFilterStep(ParallelProcessStep):
             for regex in self.include:
                 match = regex.search(block)
                 if match is not None:
-                    filtered_blocks.append(match.group())
-                    break
+                    if match.lastindex is not None:
+                        groups = match.groups()
+                        filtered_blocks.append(groups[0])
+                    else:
+                        filtered_blocks.append(match.group())
+                        break
 
         return filtered_blocks

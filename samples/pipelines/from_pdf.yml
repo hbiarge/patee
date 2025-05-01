@@ -15,10 +15,10 @@ steps:
     name: filter_lines
     config:
       include:
-        - name: definitions
-          regex: "^[A-Z-]+$"
+#        - name: definitions
+#          regex: "^[A-Z-]+$"
         - name: SV blocks starting with a lowercase letter
-          regex: "^[a-z]{1}.+ SV,"
+          regex: "(^[a-z]{1}.+) (SV),"  #"(^[a-z]{1}.+) (SV),(.+$)" "^[a-z]{1}.+ SV,"
 
   - type: regex_replace
     name: cleanup_and_normalize
@@ -27,9 +27,6 @@ steps:
 #        - name: remove parenthesis
 #          regex: "\\(.*?\\)"
 #          replacement: ""
-        - name: remove SV
-          regex: "SV,"
-          replacement: ""
         - name: remove leading whitespace
           regex: "^\\s+"
           replacement: ""
