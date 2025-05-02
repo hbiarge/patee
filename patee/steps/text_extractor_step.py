@@ -8,9 +8,8 @@ from patee.step_types import (
     DocumentContext,
     DocumentSource,
     StepContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class TextReaderExtractor(ParallelExtractStep):
 
         context = DocumentContext(
             source=DocumentSource.from_monolingual_file(source),
-            text_blocks=[document_text],
+            text_blocks=[TextItem(text=document_text, metadata={})],
             extra={}
         )
 
@@ -52,12 +51,12 @@ class TextReaderExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text_blocks=[document_1_text],
+                text_blocks=[TextItem(text=document_1_text, metadata={})],
                 extra={}
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text_blocks=[document_2_text],
+                text_blocks=[TextItem(text=document_2_text, metadata={})],
                 extra={}
             ),
         )

@@ -79,7 +79,7 @@ class HumanInTheLoopProcessorStep(ParallelProcessStep):
             )
         elif continue_file_exists:
             logger.info("continue file exists, continuing with the next step.")
-            context = DocumentPairContext.read_from(source, context.step_dir)
+            context = DocumentPairContext.load_from(source, context.step_dir)
             return StepResult(
                 context=context,
                 should_stop_pipeline=False,

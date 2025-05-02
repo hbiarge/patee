@@ -7,9 +7,8 @@ from patee.step_types import (
     StepResult,
     DocumentContext,
     StepContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -70,17 +69,25 @@ class RegexFilterStep(ParallelProcessStep):
             context=context,
         )
 
-    def _filter_document_blocks(self, original_blocks: list[str]) -> list[str]:
-        filtered_blocks = []
+    def _filter_document_blocks(self, original_blocks: list[TextItem]) -> list[TextItem]:
+        filtered_blocks: list[TextItem] = []
+
         for block in original_blocks:
             for regex in self.include:
-                match = regex.search(block)
+                match = regex.search(block.text)
                 if match is not None:
                     if match.lastindex is not None:
                         groups = match.groups()
-                        filtered_blocks.append(groups[0])
+                        item = TextItem(text=groups[0], metadata=block.metadata.copy())
+                        item.metadata[f"filter:{self.name}:original"] = block.text
+                        for idx in range(1, match.lastindex):
+                            item.metadata[f"filter:{self.name}:group_{idx}"] = groups[idx]
+                        filtered_blocks.append(item)
+                        break
                     else:
-                        filtered_blocks.append(match.group())
+                        item = TextItem(text=match.group(), metadata=block.metadata.copy())
+                        item.metadata[f"filter:{self.name}:original"] = block.text
+                        filtered_blocks.append(item)
                         break
 
         return filtered_blocks

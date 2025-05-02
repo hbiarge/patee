@@ -8,7 +8,7 @@ from patee.step_types import (
     StepContext,
     ParallelProcessStep,
     DocumentContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
 from patee.steps_builder.default_steps_builder import DefaultStepsBuilder
 
@@ -46,7 +46,7 @@ class FakeExtractor(ParallelExtractStep):
 
         context = DocumentContext(
             source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_language),
-            text_blocks=["fake text"],
+            text_blocks=[TextItem(text="fake text", metadata={})],
             extra={},
         )
         return StepResult(
@@ -69,13 +69,13 @@ class FakeExtractor(ParallelExtractStep):
             document_1=DocumentContext(
                 source=DocumentSource(document_path=source.document_1.document_path,
                                       iso2_language=source.document_1.iso2_language),
-                text_blocks=["fake text 1"],
+                text_blocks=[TextItem(text="fake text 1", metadata={})],
                 extra={},
             ),
             document_2=DocumentContext(
                 source=DocumentSource(document_path=source.document_2.document_path,
                                       iso2_language=source.document_2.iso2_language),
-                text_blocks=["fake text 2"],
+                text_blocks=[TextItem(text="fake text 2", metadata={})],
                 extra={},
             ),
         )
@@ -97,12 +97,12 @@ class FakeExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[0]),
-                text_blocks=["fake text 1"],
+                text_blocks=[TextItem(text="fake text 1", metadata={})],
                 extra={},
             ),
             document_2=DocumentContext(
                 source=DocumentSource(document_path=source.document_path, iso2_language=source.iso2_languages[1]),
-                text_blocks=["fake text 2"],
+                text_blocks=[TextItem(text="fake text 2", metadata={})],
                 extra={},
             ),
         )
@@ -118,9 +118,14 @@ class FakeProcessor(ParallelProcessStep):
 
     def _process_document(self, context: StepContext, source: DocumentContext) -> StepResult:
         self.was_called = True
+
+        for item in source.text_blocks:
+            item.metadata[f"{self.name}:original"] = item.text
+            item.text = item.text + " fake"
+
         context = DocumentContext(
             source=source.source,
-            text_blocks=[text + " fake" for text in source.text_blocks],
+            text_blocks=source.text_blocks,
             extra={},
         )
         return StepResult(
@@ -129,15 +134,23 @@ class FakeProcessor(ParallelProcessStep):
 
     def _process_document_pair(self, context: StepContext, source: DocumentPairContext) -> StepResult:
         self.was_called = True
+
+        for item in source.document_1.text_blocks:
+            item.metadata[f"{self.name}:original"] = item.text
+            item.text = item.text + " fake"
+        for item in source.document_2.text_blocks:
+            item.metadata[f"{self.name}:original"] = item.text
+            item.text = item.text + " fake"
+
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=source.document_1.source,
-                text_blocks=[text + " fake" for text in source.document_1.text_blocks],
+                text_blocks=source.document_1.text_blocks,
                 extra={},
             ),
             document_2=DocumentContext(
                 source=source.document_2.source,
-                text_blocks=[text + " fake" for text in source.document_2.text_blocks],
+                text_blocks=source.document_2.text_blocks,
                 extra={},
             ),
         )

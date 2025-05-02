@@ -7,8 +7,8 @@ from typing import Union
 from .core_types import StepContext, PipelineContext
 from .input_types import MonolingualSingleFile, MultilingualSingleFile, MonolingualSingleFilePair
 
-
-TEXT_BLOCK_SEPARATOR = "\n\n---- patee_block_separator ------------------------------- \n\n"
+TEXT_BLOCK_SEPARATOR = "\n\n###### patee_block_separator ####################################### \n\n"
+METADATA_SEPARATOR = "\n\n---- patee_metadata_separator ---- \n\n"
 
 
 @dataclass(frozen=True)
@@ -28,15 +28,36 @@ class DocumentSource:
         return DocumentContext.load_from(self, current_dir)
 
 
+@dataclass
+class TextItem:
+    text: str
+    metadata: dict[str, str]
+
+    def __str__(self):
+        metadata_str = "\n".join(f"{k}:{v}" for k, v in self.metadata.items()) \
+            if len(self.metadata) is not None else ""
+        return f"{metadata_str}{METADATA_SEPARATOR}{self.text}"
+
+    @staticmethod
+    def from_text(text: str) -> "TextItem":
+        metadata_str, text = text.split(METADATA_SEPARATOR, 1)
+        metadata = {}
+        if metadata_str:
+            for item in metadata_str.split("\n"):
+                key, value = item.split(":")
+                metadata[key] = value
+        return TextItem(text=text.strip(), metadata=metadata)
+
+
 @dataclass(frozen=True)
 class DocumentContext:
     source: DocumentSource
-    text_blocks: list[str]
+    text_blocks: list[TextItem]
     extra: dict
 
     def dump_to(self, result_dir: Path):
         file_path = result_dir / f"{self.source.document_path.stem}.txt"
-        file_path.write_text(TEXT_BLOCK_SEPARATOR.join(self.text_blocks))
+        file_path.write_text(TEXT_BLOCK_SEPARATOR.join([str(item) for item in self.text_blocks]), encoding="utf-8")
 
         if len(self.extra) > 0:
             extra_path = result_dir / f"{self.source.document_path.stem}_extra.json"
@@ -50,7 +71,13 @@ class DocumentContext:
         text = (current_dir / f"{original_source.document_path.stem}.txt").read_text()
         extra = {}
 
-        return DocumentContext(original_source, text.split(TEXT_BLOCK_SEPARATOR), extra)
+        text_blocks = text.split(TEXT_BLOCK_SEPARATOR)
+
+        return DocumentContext(
+            source=original_source,
+            text_blocks=[TextItem.from_text(text_block) for text_block in text_blocks if text_block],
+            extra=extra,
+        )
 
 
 @dataclass(frozen=True)
@@ -66,7 +93,7 @@ class DocumentPairContext:
         self.document_2.dump_to(out_dir)
 
     @staticmethod
-    def read_from(original_context: "DocumentPairContext", current_dir: Path) -> "DocumentPairContext":
+    def load_from(original_context: "DocumentPairContext", current_dir: Path) -> "DocumentPairContext":
         if not current_dir.is_dir():
             raise ValueError(f"out_dit path {current_dir} is not a directory")
 

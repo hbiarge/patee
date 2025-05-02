@@ -12,9 +12,8 @@ from patee.step_types import (
     DocumentContext,
     DocumentSource,
     StepContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class CsvExtractor(ParallelExtractStep):
 
         context = DocumentContext(
             source=DocumentSource.from_monolingual_file(source),
-            text_blocks=blocks,
+            text_blocks=[TextItem(text=block, metadata={}) for block in blocks],
             extra={},
         )
 
@@ -86,12 +85,12 @@ class CsvExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text_blocks=language_1_blocks,
+                text_blocks=[TextItem(text=block, metadata={}) for block in language_1_blocks],
                 extra={}
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text_blocks=language_2_blocks,
+                text_blocks=[TextItem(text=block, metadata={}) for block in language_2_blocks],
                 extra={}
             ),
         )
@@ -115,12 +114,12 @@ class CsvExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_multilingual_file(source, 0),
-                text_blocks=language_1_blocks,
+                text_blocks=[TextItem(text=block, metadata={}) for block in language_1_blocks],
                 extra={}
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_multilingual_file(source, 1),
-                text_blocks=language_2_blocks,
+                text_blocks=[TextItem(text=block, metadata={}) for block in language_2_blocks],
                 extra={}
             ),
         )

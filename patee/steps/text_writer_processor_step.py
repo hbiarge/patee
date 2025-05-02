@@ -52,7 +52,7 @@ class TextWriterProcessorStep(ParallelProcessStep):
         document_path = self._output_path / f"{source.source.document_path.stem}.txt"
 
         document_path.write_text(
-            data=self._block_separator.join(source.text_blocks),
+            data=self._block_separator.join([block.text for block in source.text_blocks]),
             encoding=self._encoding,
         )
 
@@ -67,13 +67,13 @@ class TextWriterProcessorStep(ParallelProcessStep):
         document_2_path = self._output_path / f"{source.document_2.source.document_path.stem}.txt"
 
         document_1_path.write_text(
-            data=self._block_separator.join(source.document_1.text_blocks),
+            data=self._block_separator.join([block.text for block in source.document_1.text_blocks]),
             encoding=self._encoding,
         )
         logger.debug(f"Document 1 written to {document_1_path}")
 
         document_2_path.write_text(
-            data=self._block_separator.join(source.document_2.text_blocks),
+            data=self._block_separator.join([block.text for block in source.document_2.text_blocks]),
             encoding=self._encoding,
         )
         logger.debug(f"Document 2 written to {document_2_path}")

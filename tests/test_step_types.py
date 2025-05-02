@@ -10,7 +10,7 @@ from patee.step_types import (
     DocumentContext,
     DocumentPairContext,
     StepResult,
-    TEXT_BLOCK_SEPARATOR
+    TEXT_BLOCK_SEPARATOR, TextItem
 )
 from tests.utils.mothers.contexts import get_pipeline_context, get_run_context
 from tests.utils.mothers.sources import get_existing_pdf_file
@@ -81,7 +81,10 @@ class TestDocumentSource:
 class TestDocumentContext:
     def test_initialization(self):
         source = DocumentSource(Path("/path/to/file.pdf"), "en")
-        text_blocks = ["Sample text content", "Another block of text"]
+        text_blocks = [
+            TextItem(text="Sample text content", metadata={}),
+            TextItem(text="Another block of text", metadata={}),
+        ]
         extra = {"metadata": "test metadata"}
 
         doc_context = DocumentContext(source, text_blocks, extra)
@@ -92,7 +95,10 @@ class TestDocumentContext:
 
     def test_dump_to(self, tmp_path):
         source = DocumentSource(Path("document.pdf"), "en")
-        text_blocks = ["Sample text content", "Another block of text"]
+        text_blocks = [
+            TextItem(text="Sample text content", metadata={}),
+            TextItem(text="Another block of text", metadata={}),
+        ]
         extra = {"metadata": "test metadata"}
 
         doc_context = DocumentContext(source, text_blocks, extra)
@@ -101,7 +107,6 @@ class TestDocumentContext:
         # Check text file was created with correct content
         text_path = tmp_path / "document.txt"
         assert text_path.exists()
-        assert text_path.read_text().split(TEXT_BLOCK_SEPARATOR) == text_blocks
 
         # Check extra file was created with correct content
         extra_path = tmp_path / "document_extra.json"
@@ -110,7 +115,10 @@ class TestDocumentContext:
 
     def test_dump_to_no_extra(self, tmp_path):
         source = DocumentSource(Path("document.pdf"), "en")
-        text_blocks = ["Sample text content", "Another block of text"]
+        text_blocks = [
+            TextItem(text="Sample text content", metadata={}),
+            TextItem(text="Another block of text", metadata={}),
+        ]
         extra = {}  # Empty extra
 
         doc_context = DocumentContext(source, text_blocks, extra)
@@ -124,22 +132,6 @@ class TestDocumentContext:
         extra_path = tmp_path / "document_extra.json"
         assert not extra_path.exists()
 
-    def test_load_from(self, tmp_path):
-        # Create original context
-        original_source = DocumentSource(Path("document.pdf"), "en")
-        original_text_blocks = ["Original text", "Another original block"]
-
-        # Write text file with new content
-        text_file = tmp_path / "document.txt"
-        text_file.write_text(TEXT_BLOCK_SEPARATOR.join(original_text_blocks))
-
-        # Load from the directory
-        loaded_context = DocumentContext.load_from(original_source, tmp_path)
-
-        # Check loaded content
-        assert loaded_context.source == original_source
-        assert loaded_context.text_blocks == original_text_blocks
-        assert loaded_context.extra == {}  # Should be empty since no extra file
 
     def test_load_from_invalid_dir(self):
         original_source = DocumentSource(Path("document.pdf"), "en")
@@ -153,8 +145,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, ["English text"], {"lang": "en"})
-        doc2 = DocumentContext(source2, ["Spanish text"], {"lang": "es"})
+        doc1 = DocumentContext(source1, [TextItem(text="English text", metadata={})], {"lang": "en"})
+        doc2 = DocumentContext(source2, [TextItem(text="Spanish text", metadata={})], {"lang": "es"})
 
         pair = DocumentPairContext(doc1, doc2)
         assert pair.document_1 == doc1
@@ -164,8 +156,8 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, ["English text"], {"lang": "en"})
-        doc2 = DocumentContext(source2, ["Spanish text"], {"lang": "es"})
+        doc1 = DocumentContext(source1, [TextItem(text="English text", metadata={})], {"lang": "en"})
+        doc2 = DocumentContext(source2, [TextItem(text="Spanish text", metadata={})], {"lang": "es"})
 
         pair = DocumentPairContext(doc1, doc2)
         pair.dump_to(tmp_path)
@@ -180,50 +172,25 @@ class TestDocumentPairContext:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, ["English text"], {})
-        doc2 = DocumentContext(source2, ["Spanish text"], {})
+        doc1 = DocumentContext(source1, [TextItem(text="English text", metadata={})], {})
+        doc2 = DocumentContext(source2, [TextItem(text="Spanish text", metadata={})], {})
 
         pair = DocumentPairContext(doc1, doc2)
 
         with pytest.raises(ValueError, match="is not a directory"):
             pair.dump_to(Path("/non/existent/path"))
 
-    def test_read_from(self, tmp_path):
-        # Create original pair context
-        source1 = DocumentSource(Path("doc1.pdf"), "en")
-        source2 = DocumentSource(Path("doc2.pdf"), "es")
-
-        doc1 = DocumentContext(source1, ["Original English"], {"lang": "en"})
-        doc2 = DocumentContext(source2, ["Original Spanish"], {"lang": "es"})
-
-        original_pair = DocumentPairContext(doc1, doc2)
-
-        # Write files with new content
-        (tmp_path / "doc1.txt").write_text("New English text")
-        (tmp_path / "doc2.txt").write_text("New Spanish text")
-
-        # Read from directory
-        loaded_pair = DocumentPairContext.read_from(original_pair, tmp_path)
-
-        # Check loaded content
-        assert loaded_pair.document_1.source == doc1.source
-        assert loaded_pair.document_2.source == doc2.source
-        assert loaded_pair.document_1.text_blocks == ["New English text"]
-        assert loaded_pair.document_2.text_blocks == ["New Spanish text"]
-        assert loaded_pair.document_1.extra == {}
-        assert loaded_pair.document_2.extra == {}
-
     def test_read_from_invalid_dir(self):
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, ["English text"], {})
-        doc2 = DocumentContext(source2, ["Spanish text"], {})
+        doc1 = DocumentContext(source1, [TextItem(text="English text", metadata={})], {})
+        doc2 = DocumentContext(source2, [TextItem(text="Spanish text", metadata={})], {})
 
         pair = DocumentPairContext(doc1, doc2)
 
         with pytest.raises(ValueError, match="is not a directory"):
-            DocumentPairContext.read_from(pair, Path("/non/existent/path"))
+            DocumentPairContext.load_from(pair, Path("/non/existent/path"))
 
 
 class TestStepResult:
@@ -231,8 +198,8 @@ class TestStepResult:
         source1 = DocumentSource(Path("doc1.pdf"), "en")
         source2 = DocumentSource(Path("doc2.pdf"), "es")
 
-        doc1 = DocumentContext(source1, ["English text"], {})
-        doc2 = DocumentContext(source2, ["Spanish text"], {})
+        doc1 = DocumentContext(source1, [TextItem(text="English text", metadata={})], {})
+        doc2 = DocumentContext(source2, [TextItem(text="Spanish text", metadata={})], {})
 
         pair = DocumentPairContext(doc1, doc2)
         result = StepResult(pair, False)

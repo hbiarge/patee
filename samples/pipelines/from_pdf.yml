@@ -18,7 +18,7 @@ steps:
 #        - name: definitions
 #          regex: "^[A-Z-]+$"
         - name: SV blocks starting with a lowercase letter
-          regex: "(^[a-z]{1}.+) (SV),"  #"(^[a-z]{1}.+) (SV),(.+$)" "^[a-z]{1}.+ SV,"
+          regex: "(^[a-z]{1}.+) (SV), (.+$)" # "(^[a-z]{1}.+) (SV)," "^[a-z]{1}.+ SV,"
 
   - type: regex_replace
     name: cleanup_and_normalize

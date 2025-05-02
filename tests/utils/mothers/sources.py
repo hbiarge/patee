@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 from patee.input_types import SingleFile, MonolingualSingleFile, MonolingualSingleFilePair
-from patee.step_types import StepResult, DocumentSource, DocumentContext, DocumentPairContext
+from patee.step_types import StepResult, DocumentSource, DocumentContext, DocumentPairContext, TextItem
 
 SAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "samples"
 PIPELINES_DIR = SAMPLES_DIR / "pipelines"
@@ -40,10 +40,10 @@ def get_existing_monolingual_single_file_pair(mode: str = "pdf") -> MonolingualS
             shared_config=None
         )
 
-def get_default_text_blocks() -> list[str]:
+def get_default_text_blocks() -> list[TextItem]:
     return [
-        "bloque de texto 1",
-        "bloque de texto 2",
+        TextItem(text="bloque de texto 1", metadata={}),
+        TextItem(text="bloque de texto 2", metadata={}),
     ]
 
 def get_existing_document_pair_context() -> DocumentPairContext:

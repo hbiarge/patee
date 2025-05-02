@@ -7,9 +7,8 @@ from patee.step_types import (
     StepResult,
     DocumentContext,
     StepContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -73,9 +72,9 @@ class RegexReplaceStep(ParallelProcessStep):
             context=context,
         )
 
-    def _replace_document_blocks(self, original_blocks: list[str]):
+    def _replace_document_blocks(self, original_blocks: list[TextItem]):
         for idx, block in enumerate(original_blocks):
             for replacement in self.replacements:
-                block = replacement[0].sub(replacement[1], block)
+                block.text = replacement[0].sub(replacement[1], block.text)
 
             original_blocks[idx] = block

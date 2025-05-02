@@ -22,7 +22,7 @@ from patee.step_types import (
     DocumentContext,
     DocumentSource,
     StepContext,
-    DocumentPairContext,
+    DocumentPairContext, TextItem,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,7 +133,7 @@ class DoclingExtractor(ParallelExtractStep):
 
         context = DocumentContext(
             source=DocumentSource.from_monolingual_file(source),
-            text_blocks=[element[1] for element in result.extracted_text],
+            text_blocks=DoclingExtractor._build_blocks(result.extracted_text),
             extra={
                 "excluded_text": result.excluded_text,
                 "seen_labels": [label for label in result.seen_labels]
@@ -160,7 +160,7 @@ class DoclingExtractor(ParallelExtractStep):
         context = DocumentPairContext(
             document_1=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_1),
-                text_blocks=[element[1] for element in document_1_result.extracted_text],
+                text_blocks=DoclingExtractor._build_blocks(document_1_result.extracted_text),
                 extra={
                     "excluded_text": document_1_result.excluded_text,
                     "seen_labels": [label for label in document_1_result.seen_labels]
@@ -168,7 +168,7 @@ class DoclingExtractor(ParallelExtractStep):
             ),
             document_2=DocumentContext(
                 source=DocumentSource.from_monolingual_file(source.document_2),
-                text_blocks=[element[1] for element in document_2_result.extracted_text],
+                text_blocks=DoclingExtractor._build_blocks(document_2_result.extracted_text),
                 extra={
                     "excluded_text": document_2_result.excluded_text,
                     "seen_labels": [label for label in document_2_result.seen_labels]
@@ -227,4 +227,7 @@ class DoclingExtractor(ParallelExtractStep):
             seen_labels=seen_labels
         )
 
-
+    @staticmethod
+    def _build_blocks(extracted_text: Iterable[NodeItem]) -> list[TextItem]:
+        return [TextItem(text=element[1], metadata={"docling:label": str(element[0])})
+                         for element in extracted_text]
